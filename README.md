@@ -15,8 +15,9 @@ gclient sync
 popd
 rm -rf test tools third_party
 ```
-From another platform (e.g. Linux), perform the same steps above, then transfer
-the directories test, tools and third_party to your z/OS machine.
+From another platform (e.g. Linux), perform the same steps above (but without
+the rm command), then transfer the directories test, tools and third_party to
+your z/OS machine.
 
 Create an archive using `tar` (on the non-z/OS platform):
 ```
