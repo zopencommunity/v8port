@@ -89,7 +89,7 @@ popd
 ```
 Even though zoslib is built as part of V8 as a static library, the shared
 library version currently has to be built manually, and is used by
-by `IsS390SimdSupported()` in `tools/testrunner/local/utils.py`, where it's
+`IsS390SimdSupported()` in `tools/testrunner/local/utils.py`, where it's
 dynamically loaded, with its directory extracted from the `ZOSLIB_LIBPATH`
 environment variable. So set the variable before running the tests:
 ```
