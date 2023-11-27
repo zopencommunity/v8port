@@ -1,0 +1,318 @@
+diff --git a/absl/base/BUILD.gn b/absl/base/BUILD.gn
+index b211559..8e26e9c 100644
+--- a/absl/base/BUILD.gn
++++ b/absl/base/BUILD.gn
+@@ -78,6 +78,10 @@ absl_source_set("config") {
+     "options.h",
+     "policy_checks.h",
+   ]
++  if (current_os == "zos") {
++    public_configs = [ "//third_party/zoslib:zoslib_config" ]
++    deps = [ "//third_party/zoslib:zoslib" ]
++  }
+ }
+ 
+ absl_source_set("cycleclock_internal") {
+diff --git a/absl/base/config.h b/absl/base/config.h
+index b0e7fe8..40bdaf4 100644
+--- a/absl/base/config.h
++++ b/absl/base/config.h
+@@ -293,8 +293,8 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
+ #if ABSL_HAVE_FEATURE(cxx_thread_local) && \
+     !(TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_9_0)
+ #define ABSL_HAVE_THREAD_LOCAL 1
+-#endif
+-#else  // !defined(__APPLE__)
++#endif  // defined(__APPLE__)
++#elif !defined(__MVS__)
+ #define ABSL_HAVE_THREAD_LOCAL 1
+ #endif
+ 
+@@ -418,7 +418,8 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||
+     defined(__asmjs__) || defined(__EMSCRIPTEN__) || defined(__Fuchsia__) || \
+     defined(__sun) || defined(__ASYLO__) || defined(__myriad2__) ||          \
+     defined(__HAIKU__) || defined(__OpenBSD__) || defined(__NetBSD__) ||     \
+-    defined(__QNX__) || defined(__VXWORKS__) || defined(__hexagon__)
++    defined(__QNX__) || defined(__VXWORKS__) || defined(__hexagon__) ||      \
++    defined(__MVS__)
+ #define ABSL_HAVE_MMAP 1
+ #endif
+ 
+diff --git a/absl/base/internal/low_level_alloc.cc b/absl/base/internal/low_level_alloc.cc
+index 6d2cfea..295b909 100644
+--- a/absl/base/internal/low_level_alloc.cc
++++ b/absl/base/internal/low_level_alloc.cc
+@@ -28,6 +28,8 @@
+ #include "absl/base/macros.h"
+ #include "absl/base/thread_annotations.h"
+ 
++#include "../../third_party/zoslib/include/zos-base.h"
++
+ // LowLevelAlloc requires that the platform support low-level
+ // allocation of virtual memory. Platforms lacking this cannot use
+ // LowLevelAlloc.
+@@ -552,6 +554,9 @@ static void *DoAllocWithArena(size_t request, LowLevelAlloc::Arena *arena) {
+       new_pages = VirtualAlloc(nullptr, new_pages_size,
+                                MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+       ABSL_RAW_CHECK(new_pages != nullptr, "VirtualAlloc failed");
++#elif defined(__MVS__) && !defined(MAP_ANONYMOUS)
++      // TODO(gabylb): zos - undo when MAP_ANONYMOUS is supported:
++      new_pages == __zalloc(new_pages_size, arena->pagesize);
+ #else
+ #ifndef ABSL_LOW_LEVEL_ALLOC_ASYNC_SIGNAL_SAFE_MISSING
+       if ((arena->flags & LowLevelAlloc::kAsyncSignalSafe) != 0) {
+diff --git a/absl/base/internal/sysinfo.cc b/absl/base/internal/sysinfo.cc
+index 79eaba3..5e00d84 100644
+--- a/absl/base/internal/sysinfo.cc
++++ b/absl/base/internal/sysinfo.cc
+@@ -467,7 +467,11 @@ pid_t GetTID() {
+ pid_t GetTID() {
+   // `pthread_t` need not be arithmetic per POSIX; platforms where it isn't
+   // should be handled above.
++#ifdef __MVS__
++  return static_cast<pid_t>(pthread_self().__);
++#else
+   return static_cast<pid_t>(pthread_self());
++#endif
+ }
+ 
+ #endif
+diff --git a/absl/debugging/failure_signal_handler.cc b/absl/debugging/failure_signal_handler.cc
+index 570d1e5..71665c8 100644
+--- a/absl/debugging/failure_signal_handler.cc
++++ b/absl/debugging/failure_signal_handler.cc
+@@ -33,6 +33,9 @@
+ #include <sys/mman.h>
+ #if defined(MAP_ANON) && !defined(MAP_ANONYMOUS)
+ #define MAP_ANONYMOUS MAP_ANON
++// TODO(gabylb): zos - undo when supported:
++#elif defined(__MVS__) && !defined(MAP_ANONYMOUS)
++#define MAP_ANONYMOUS 0
+ #endif
+ #endif
+ 
+diff --git a/absl/debugging/internal/examine_stack.cc b/absl/debugging/internal/examine_stack.cc
+index 3dd6ba1..f5808c4 100644
+--- a/absl/debugging/internal/examine_stack.cc
++++ b/absl/debugging/internal/examine_stack.cc
+@@ -26,6 +26,9 @@
+ #include <sys/mman.h>
+ #if defined(MAP_ANON) && !defined(MAP_ANONYMOUS)
+ #define MAP_ANONYMOUS MAP_ANON
++// TODO(gabylb): zos - undo when supported:
++#elif defined(__MVS__) && !defined(MAP_ANONYMOUS)
++#define MAP_ANONYMOUS 0
+ #endif
+ #endif
+ 
+diff --git a/absl/log/internal/log_sink_set.cc b/absl/log/internal/log_sink_set.cc
+index b7cbe36..55cb4ca 100644
+--- a/absl/log/internal/log_sink_set.cc
++++ b/absl/log/internal/log_sink_set.cc
+@@ -58,8 +58,12 @@ bool& ThreadIsLoggingStatus() {
+ #ifdef ABSL_HAVE_THREAD_LOCAL
+   ABSL_CONST_INIT thread_local bool thread_is_logging = false;
+   return thread_is_logging;
++#else
++#ifdef __MVS__
++  ABSL_CONST_INIT static pthread_key_t thread_is_logging_key = {0};
+ #else
+   ABSL_CONST_INIT static pthread_key_t thread_is_logging_key;
++#endif
+   static const bool unused = [] {
+     if (pthread_key_create(&thread_is_logging_key, [](void* data) {
+           delete reinterpret_cast<bool*>(data);
+diff --git a/absl/log/internal/test_helpers.cc b/absl/log/internal/test_helpers.cc
+index bfcc967..8b774b5 100644
+--- a/absl/log/internal/test_helpers.cc
++++ b/absl/log/internal/test_helpers.cc
+@@ -16,6 +16,8 @@
+ 
+ #ifdef __Fuchsia__
+ #include <zircon/syscalls.h>
++#elif defined(__MVS__)
++#include <signal.h> // for SIGABRT
+ #endif
+ 
+ #include "gtest/gtest.h"
+diff --git a/absl/synchronization/internal/kernel_timeout.cc b/absl/synchronization/internal/kernel_timeout.cc
+index 48ea628..55bb9d3 100644
+--- a/absl/synchronization/internal/kernel_timeout.cc
++++ b/absl/synchronization/internal/kernel_timeout.cc
+@@ -148,7 +148,7 @@ struct timespec KernelTimeout::MakeRelativeTimespec() const {
+   return absl::ToTimespec(absl::Nanoseconds(InNanosecondsFromNow()));
+ }
+ 
+-#ifndef _WIN32
++#if !defined(_WIN32) && (!defined(__MVS__) || __EDC_TARGET > 0x42050000)
+ struct timespec KernelTimeout::MakeClockAbsoluteTimespec(clockid_t c) const {
+   if (!has_timeout()) {
+     return absl::ToTimespec(absl::Nanoseconds(kMaxNanos));
+diff --git a/absl/synchronization/internal/kernel_timeout.h b/absl/synchronization/internal/kernel_timeout.h
+index 06404a7..4194721 100644
+--- a/absl/synchronization/internal/kernel_timeout.h
++++ b/absl/synchronization/internal/kernel_timeout.h
+@@ -82,7 +82,7 @@ class KernelTimeout {
+   // this method in the case of a spurious wakeup.
+   struct timespec MakeRelativeTimespec() const;
+ 
+-#ifndef _WIN32
++#if !defined(_WIN32) && (!defined(__MVS__) || __EDC_TARGET > 0x42050000)
+   // Convert to `struct timespec` for interfaces that expect an absolute timeout
+   // on a specific clock `c`. This is similar to `MakeAbsTimespec()`, but
+   // callers usually want to use this method with `CLOCK_MONOTONIC` when
+diff --git a/absl/synchronization/internal/kernel_timeout_test.cc b/absl/synchronization/internal/kernel_timeout_test.cc
+index bc54671..33fd836 100644
+--- a/absl/synchronization/internal/kernel_timeout_test.cc
++++ b/absl/synchronization/internal/kernel_timeout_test.cc
+@@ -86,7 +86,7 @@ TEST(KernelTimeout, FiniteTimes) {
+     EXPECT_TRUE(t.is_absolute_timeout());
+     EXPECT_FALSE(t.is_relative_timeout());
+     EXPECT_EQ(absl::TimeFromTimespec(t.MakeAbsTimespec()), when);
+-#ifndef _WIN32
++#if !defined(_WIN32) && (!defined(__MVS__) || __EDC_TARGET > 0x42050000)
+     EXPECT_LE(
+         absl::AbsDuration(absl::Now() + duration -
+                           absl::TimeFromTimespec(
+@@ -118,7 +118,7 @@ TEST(KernelTimeout, InfiniteFuture) {
+   // absl::InfiniteFuture(), but we should return a very large value.
+   EXPECT_GT(absl::TimeFromTimespec(t.MakeAbsTimespec()),
+             absl::Now() + absl::Hours(100000));
+-#ifndef _WIN32
++#if !defined(_WIN32) && (!defined(__MVS__) || __EDC_TARGET > 0x42050000)
+   EXPECT_GT(absl::TimeFromTimespec(t.MakeClockAbsoluteTimespec(CLOCK_REALTIME)),
+             absl::Now() + absl::Hours(100000));
+ #endif
+@@ -143,7 +143,7 @@ TEST(KernelTimeout, DefaultConstructor) {
+   // absl::InfiniteFuture(), but we should return a very large value.
+   EXPECT_GT(absl::TimeFromTimespec(t.MakeAbsTimespec()),
+             absl::Now() + absl::Hours(100000));
+-#ifndef _WIN32
++#if !defined(_WIN32) && (!defined(__MVS__) || __EDC_TARGET > 0x42050000)
+   EXPECT_GT(absl::TimeFromTimespec(t.MakeClockAbsoluteTimespec(CLOCK_REALTIME)),
+             absl::Now() + absl::Hours(100000));
+ #endif
+@@ -168,7 +168,7 @@ TEST(KernelTimeout, TimeMaxNanos) {
+   // absl::InfiniteFuture(), but we should return a very large value.
+   EXPECT_GT(absl::TimeFromTimespec(t.MakeAbsTimespec()),
+             absl::Now() + absl::Hours(100000));
+-#ifndef _WIN32
++#if !defined(_WIN32) && (!defined(__MVS__) || __EDC_TARGET > 0x42050000)
+   EXPECT_GT(absl::TimeFromTimespec(t.MakeClockAbsoluteTimespec(CLOCK_REALTIME)),
+             absl::Now() + absl::Hours(100000));
+ #endif
+@@ -193,7 +193,7 @@ TEST(KernelTimeout, Never) {
+   // absl::InfiniteFuture(), but we should return a very large value.
+   EXPECT_GT(absl::TimeFromTimespec(t.MakeAbsTimespec()),
+             absl::Now() + absl::Hours(100000));
+-#ifndef _WIN32
++#if !defined(_WIN32) && (!defined(__MVS__) || __EDC_TARGET > 0x42050000)
+   EXPECT_GT(absl::TimeFromTimespec(t.MakeClockAbsoluteTimespec(CLOCK_REALTIME)),
+             absl::Now() + absl::Hours(100000));
+ #endif
+@@ -215,7 +215,7 @@ TEST(KernelTimeout, InfinitePast) {
+   EXPECT_FALSE(t.is_relative_timeout());
+   EXPECT_LE(absl::TimeFromTimespec(t.MakeAbsTimespec()),
+             absl::FromUnixNanos(1));
+-#ifndef _WIN32
++#if !defined(_WIN32) && (!defined(__MVS__) || __EDC_TARGET > 0x42050000)
+   EXPECT_LE(absl::TimeFromTimespec(t.MakeClockAbsoluteTimespec(CLOCK_REALTIME)),
+             absl::FromUnixSeconds(1));
+ #endif
+@@ -249,7 +249,7 @@ TEST(KernelTimeout, FiniteDurations) {
+     EXPECT_LE(absl::AbsDuration(absl::Now() + duration -
+                                 absl::TimeFromTimespec(t.MakeAbsTimespec())),
+               absl::Milliseconds(5));
+-#ifndef _WIN32
++#if !defined(_WIN32) && (!defined(__MVS__) || __EDC_TARGET > 0x42050000)
+     EXPECT_LE(
+         absl::AbsDuration(absl::Now() + duration -
+                           absl::TimeFromTimespec(
+@@ -297,7 +297,7 @@ TEST(KernelTimeout, NegativeDurations) {
+     EXPECT_LE(absl::AbsDuration(absl::Now() -
+                                 absl::TimeFromTimespec(t.MakeAbsTimespec())),
+               absl::Milliseconds(5));
+-#ifndef _WIN32
++#if !defined(_WIN32) && (!defined(__MVS__) || __EDC_TARGET > 0x42050000)
+     EXPECT_LE(absl::AbsDuration(absl::Now() - absl::TimeFromTimespec(
+                                                   t.MakeClockAbsoluteTimespec(
+                                                       CLOCK_REALTIME))),
+@@ -325,7 +325,7 @@ TEST(KernelTimeout, InfiniteDuration) {
+   // absl::InfiniteFuture(), but we should return a very large value.
+   EXPECT_GT(absl::TimeFromTimespec(t.MakeAbsTimespec()),
+             absl::Now() + absl::Hours(100000));
+-#ifndef _WIN32
++#if !defined(_WIN32) && (!defined(__MVS__) || __EDC_TARGET > 0x42050000)
+   EXPECT_GT(absl::TimeFromTimespec(t.MakeClockAbsoluteTimespec(CLOCK_REALTIME)),
+             absl::Now() + absl::Hours(100000));
+ #endif
+@@ -350,7 +350,7 @@ TEST(KernelTimeout, DurationMaxNanos) {
+   // absl::InfiniteFuture(), but we should return a very large value.
+   EXPECT_GT(absl::TimeFromTimespec(t.MakeAbsTimespec()),
+             absl::Now() + absl::Hours(100000));
+-#ifndef _WIN32
++#if !defined(_WIN32) && (!defined(__MVS__) || __EDC_TARGET > 0x42050000)
+   EXPECT_GT(absl::TimeFromTimespec(t.MakeClockAbsoluteTimespec(CLOCK_REALTIME)),
+             absl::Now() + absl::Hours(100000));
+ #endif
+@@ -375,7 +375,7 @@ TEST(KernelTimeout, OverflowNanos) {
+   // Timeouts should still be far in the future.
+   EXPECT_GT(absl::TimeFromTimespec(t.MakeAbsTimespec()),
+             absl::Now() + absl::Hours(100000));
+-#ifndef _WIN32
++#if !defined(_WIN32) && (!defined(__MVS__) || __EDC_TARGET > 0x42050000)
+   EXPECT_GT(absl::TimeFromTimespec(t.MakeClockAbsoluteTimespec(CLOCK_REALTIME)),
+             absl::Now() + absl::Hours(100000));
+ #endif
+diff --git a/absl/time/clock_test.cc b/absl/time/clock_test.cc
+index bc77dbc..0ebfed6 100644
+--- a/absl/time/clock_test.cc
++++ b/absl/time/clock_test.cc
+@@ -18,8 +18,8 @@
+ #if defined(ABSL_HAVE_ALARM)
+ #include <signal.h>
+ #include <unistd.h>
+-#ifdef _AIX
+-// sig_t is not defined in AIX.
++#if defined(_AIX) || defined(__MVS__)
++// sig_t is not defined in AIX and z/OS.
+ typedef void (*sig_t)(int);
+ #endif
+ #elif defined(__linux__) || defined(__APPLE__)
+diff --git a/absl/time/internal/cctz/src/time_zone_libc.cc b/absl/time/internal/cctz/src/time_zone_libc.cc
+index d014612..c90497e 100644
+--- a/absl/time/internal/cctz/src/time_zone_libc.cc
++++ b/absl/time/internal/cctz/src/time_zone_libc.cc
+@@ -31,6 +31,8 @@
+ extern "C" {
+ extern long altzone;
+ }
++#elif defined(__MVS__)
++time_t altzone = 0;
+ #endif
+ 
+ namespace absl {
+@@ -50,7 +52,7 @@ auto tm_zone(const std::tm& tm) -> decltype(_tzname[0]) {
+   const bool is_dst = tm.tm_isdst > 0;
+   return _tzname[is_dst];
+ }
+-#elif defined(__sun) || defined(_AIX)
++#elif defined(__sun) || defined(_AIX) || defined(__MVS__)
+ // Uses the globals: 'timezone', 'altzone' and 'tzname'.
+ auto tm_gmtoff(const std::tm& tm) -> decltype(timezone) {
+   const bool is_dst = tm.tm_isdst > 0;
+diff --git a/absl/time/internal/get_current_time_posix.inc b/absl/time/internal/get_current_time_posix.inc
+index 4207200..65a0d50 100644
+--- a/absl/time/internal/get_current_time_posix.inc
++++ b/absl/time/internal/get_current_time_posix.inc
+@@ -5,6 +5,10 @@
+ #include <cstdint>
+ 
+ #include "absl/base/internal/raw_logging.h"
++#ifdef __MVS__
++// TODO(gabylb): zos - for clock_gettime on z/OS < 3.1.
++#include "../../third_party/zoslib/include/zos-base.h"
++#endif
+ 
+ namespace absl {
+ ABSL_NAMESPACE_BEGIN

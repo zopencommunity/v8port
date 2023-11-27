@@ -1,0 +1,30 @@
+diff --git a/googletest/include/gtest/internal/gtest-param-util.h b/googletest/include/gtest/internal/gtest-param-util.h
+index d70cd857..017f7ba3 100644
+--- a/googletest/include/gtest/internal/gtest-param-util.h
++++ b/googletest/include/gtest/internal/gtest-param-util.h
+@@ -52,6 +52,12 @@
+ #include "gtest/internal/gtest-internal.h"
+ #include "gtest/internal/gtest-port.h"
+ 
++#ifdef __MVS__
++// TODO(gabylb): zos - base_ conflicts with thread_local workaround
++// in V8 ptr-compr.h; undo when thread_local is supported.
++#undef base_
++#endif
++
+ namespace testing {
+ // Input to a parameterized test name generator, describing a test parameter.
+ // Consists of the parameter value and the integer parameter index.
+diff --git a/googletest/include/gtest/internal/gtest-port.h b/googletest/include/gtest/internal/gtest-port.h
+index e178782c..277ca745 100644
+--- a/googletest/include/gtest/internal/gtest-port.h
++++ b/googletest/include/gtest/internal/gtest-port.h
+@@ -602,7 +602,7 @@ typedef struct _RTL_CRITICAL_SECTION GTEST_CRITICAL_SECTION;
+      GTEST_OS_AIX || GTEST_OS_HPUX || GTEST_OS_OPENBSD || GTEST_OS_QNX || \
+      GTEST_OS_FREEBSD || GTEST_OS_NETBSD || GTEST_OS_FUCHSIA ||           \
+      GTEST_OS_DRAGONFLY || GTEST_OS_GNU_KFREEBSD || GTEST_OS_HAIKU ||     \
+-     GTEST_OS_GNU_HURD)
++     GTEST_OS_GNU_HURD || GTEST_OS_ZOS)
+ #define GTEST_HAS_DEATH_TEST 1
+ #endif
+ 

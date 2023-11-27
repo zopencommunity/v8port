@@ -1,0 +1,16 @@
+# Names should be added to this file with this pattern:
+#
+# For individuals:
+#   Name <email address>
+#
+# For organizations:
+#   Organization <fnmatch pattern>
+#
+# See python fnmatch module documentation for more information.
+
+IBM Inc. <*@*.ibm.com>
+
+CW Cheung <ccw.280231@ca.ibm.com>
+Gaby Baghdadi <baghdadi@ca.ibm.com>
+Igor Todorovski <itodorov@ca.ibm.com>
+Wayne Zhang <Shuowang.Zhang@ibm.com>

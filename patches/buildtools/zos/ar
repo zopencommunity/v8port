@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+###############################################################################
+# Licensed Materials - Property of IBM
+# (C) Copyright IBM Corp. 2023. All Rights Reserved.
+# US Government Users Restricted Rights - Use, duplication or
+# disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+###############################################################################
+
+# Wrapper for /bin/ar on z/OS to handle .o entries with duplicate basename
+# that /bin/ar ignores. If duplicates are found from the initial /bin/ar,
+# it copies them to a temp directory with a different name - in which each
+# '/' in the path is replaced by '_', and then re-runs /bin/ar -qc to append
+# those renamed .o's to the target archive.
+
+(($#==0)) && /bin/echo "usage: $0 <arguments for /bin/ar>" >&2 && exit -1
+
+ID=`basename $0`.; for i in {0..31}; do ID+=$(printf "%x" $(($RANDOM%16)) ); done;
+_TMPERR=${TMPDIR:-/tmp}/$ID.tmp.err
+_TMPDIR=${TMPDIR:-/tmp}/$ID.tmp.dir
+trap "/bin/rm -rf $_TMPDIR $_TMPERR && exit" EXIT INT TERM QUIT HUP
+rm -rf $_TMPDIR && /bin/mkdir -p $_TMPDIR
+
+/bin/ar $@ 2> $_TMPERR
+rc=$?
+((rc!=0)) && /bin/cat $_TMPERR >&2 && exit $rc
+! test -s $_TMPERR && exit $rc
+
+dups=`/bin/egrep "ar: FSUM9942 .* ignored, same basename as " $_TMPERR | /bin/awk '{print $3}' | /bin/sed 's:"::g'`
+test -z "$dups" && /bin/cat $_TMPERR >&2 && exit $rc # some other warning not handled here
+
+tgt=
+for tok in $@; do
+  [[ "$tok" == *.a ]] && tgt=$tok && break
+  [[ "$tok" == *.o ]] && echo "Error in $0: no .a file found before the first .o in $@" >&2 && exit -1
+done
+
+test -z "$tgt" && echo "Error in $0: no .a file found in $@" >&2 && exit -1
+ndups=
+for o in $dups; do
+  newtgtname=`echo $o | /bin/sed 's:/:_:g'`
+  /bin/cp $o $_TMPDIR/$newtgtname 
+  ndups+=" $_TMPDIR/$newtgtname"
+done
+/bin/ar -qc $tgt $ndups
