@@ -1,3 +1,5 @@
+[![Automatic version updates](https://github.com/ZOSOpenTools/v8port/actions/workflows/bump.yml/badge.svg)](https://github.com/ZOSOpenTools/v8port/actions/workflows/bump.yml)
+
 v8
 
 A port of Google V8 JavaScript engine to z/OS Open Tools project
