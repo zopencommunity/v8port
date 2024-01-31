@@ -7,14 +7,20 @@ A port of Google V8 JavaScript engine to z/OS Open Tools project
 # Applying the patches
 Since the [cipd executable](https://chromium.googlesource.com/infra/luci/luci-go/+/master/cipd/) is not yet ported on z/OS, the following steps are
 currently used to update V8 and its dependencies, and apply the z/OS port, after
-the initial [fetch v8](https://v8.dev/docs/source-code).
+the initial [fetch v8](https://v8.dev/docs/source-code) (also included below with a comment).
 
 ```
+# Do this only once:
+mkdir ~/v8base
+cd v8base
+fetch v8
 cd v8
+
+# Do this to update V8 and its dependencies. The reset command is required
+# as the current patches are valid as of the specified commit.
 git pull
-pushd ..
+git reset fce38915e4c7c73c0e7f77bb13e2a78514968d35 --hard
 gclient sync
-popd
 rm -rf test tools third_party
 ```
 From another platform (e.g. Linux), perform the same steps above (but without
@@ -53,7 +59,7 @@ repository at the time of the pull.
 
 From your local V8 repository or dependency, run `git apply` on the
 `git.<date>.<commit>.diff` file that's under the corresponding directory in
-v8port/patches/. Example:
+v8port/patches/. Adjust the path to v8port to match your environment. Example:
 ```
 cd v8
 git apply ~/v8port/patches/git.20231122.fce38915e4.diff
