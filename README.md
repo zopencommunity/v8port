@@ -1,38 +1,106 @@
 [![Automatic version updates](https://github.com/ZOSOpenTools/v8port/actions/workflows/bump.yml/badge.svg)](https://github.com/ZOSOpenTools/v8port/actions/workflows/bump.yml)
 
-v8
+# v8
 
 A port of Google V8 JavaScript engine to z/OS Open Tools project
 
-# Applying the patches
+## Workflow 
+
+### Applying the patches
 Since the [cipd executable](https://chromium.googlesource.com/infra/luci/luci-go/+/master/cipd/) is not yet ported on z/OS, the following steps are
 currently used to update V8 and its dependencies, and apply the z/OS port, after
 the initial [fetch v8](https://v8.dev/docs/source-code) (also included below with a comment).
 
-```
-# Do this only once:
-mkdir ~/v8base
-cd v8base
-fetch v8
-cd v8
+This workflow requires two platforms.  One is USS which is the target platform.  The second is a generic linux
+AMD64 platform to get files normally acquired via `cipd`
 
-# Do this to update V8 and its dependencies. The reset command is required
-# as the current patches are valid as of the specified commit.
-git pull
-git reset fce38915e4c7c73c0e7f77bb13e2a78514968d35 --hard
-gclient sync
-rm -rf test tools third_party
-```
-From another platform (e.g. Linux), perform the same steps above (but without
-the rm command), then transfer the directories test, tools and third_party to
-your z/OS machine.
 
-Create an archive using `tar` (on the non-z/OS platform):
+#### Linux AMD64 plaform setup
+
+This is the workflow on the non USS platform for obtaining files via `cipd`.  Do
+this once.
+
 ```
-cd v8
-tar -cvf x.tar test tools third_party
+$ cd $HOME
+$ git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+$ export PATH=~/depot_tools:$PATH
+$ fetch v8
+$ cd v8
+$ git checkout main
+$ git reset fce38915e4c7c73c0e7f77bb13e2a78514968d35 --hard
+$ tar -cvf x.tar test tools third_party
+$ scp x.tar user@uss_host:~/zopen/.
 ```
-Transfer x.tar to the z/OS machine using your preferred method (e.g. `sftp`).
+
+Note, the resultant tar file is 2.4GB.  The last step is for transferring the file
+to the USS platform.
+
+#### USS platform setup
+
+This is the workflow on the USS platform.
+
+##### Do this once
+
+This uses zopen depot tools port to obtain a copy of the v8 source
+according to the v8 workflow.
+
+```
+$ mkdir $HOME/zopen/dev/v8base
+$ cd $HOME/zopen/dev/v8base
+$ fetch v8
+```
+
+Obtain a valid git repo.
+
+```
+$ cd $HOME/zopen/dev/v8base/v8
+$ git checkout main
+```
+
+##### Do this afterwards and everytime you need to sync
+
+Once you have done the intial setup above, these are the
+steps to sync the code to the specified revision and apply the corresponding
+files from the Linux AMD64 platform for the files normally 
+acquired via `cipd`.
+
+The reset command is required as the current patches are valid as of the specified commit.
+
+```
+$ cd $HOME/zopen/dev/v8base/v8
+$ git pull
+$ git reset fce38915e4c7c73c0e7f77bb13e2a78514968d35 --hard
+$ gclient sync
+$ rm -rf test tools third_party
+```
+
+At this point the file system is ready to be suplemented with the files
+in the tar file from the Linux AMD64 platform.
+
+```
+$ cd $HOME/zopen/dev/v8base/v8
+$ tar -xvf ~/zopen/x.tar
+```
+
+Output:
+
+```
+JD895801@USILCA31 v8 (main)
+$ tar -xvf ~/zopen/x.tar
+tar: This does not look like a tar archive
+tar: Skipping to next header
+\244\201\223\242M\363k@\201\204\204M\207k@\206]]^\025
+tar: Skipping to next header
+\345\301\323\344\305@L@N\311\225\206\211\225\211\243\250]@~~~@\243\231\244\205}]^\025\320\025
+tar: Skipping to next header
+a\025\025\211\206@M\243\231\244\205]@\300\025@@\211\224\227\226\231\243M}}]^\025\320\025
+tar: Skipping to next header
+tar: Exiting with failure status due to previous errors
+JD895801@USILCA31 v8 (main)
+$ type tar
+tar is hashed (/z/jd895801/zopen/usr/local/bin/tar)
+```
+
 
 Then on the z/OS machine:
 ```
