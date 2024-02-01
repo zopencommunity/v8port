@@ -11,13 +11,13 @@ Since the [cipd executable](https://chromium.googlesource.com/infra/luci/luci-go
 currently used to update V8 and its dependencies, and apply the z/OS port, after
 the initial [fetch v8](https://v8.dev/docs/source-code) (also included below with a comment).
 
-This workflow requires two platforms.  One is USS which is the target platform.  The second is a generic linux
+This workflow requires two platforms.  One is z/OS® UNIX System Services (z/OS UNIX) which is the target platform.  The second is a generic linux
 AMD64 platform to get files normally acquired via `cipd`
 
 
-#### Linux AMD64 plaform setup
+#### Linux plaform (non z/OS® UNIX System Services (z/OS UNIX)) setup
 
-This is the workflow on the non USS platform for obtaining files via `cipd`.  Do
+This is the workflow on the non z/OS® UNIX System Services (z/OS UNIX) platform for obtaining files via `cipd`.  Do
 this once.
 
 ```
@@ -29,15 +29,21 @@ $ cd v8
 $ git checkout main
 $ git reset fce38915e4c7c73c0e7f77bb13e2a78514968d35 --hard
 $ tar -cvf x.tar test tools third_party
-$ scp x.tar user@uss_host:~/zopen/.
 ```
 
-Note, the resultant tar file is 2.4GB.  The last step is for transferring the file
-to the USS platform.
+Note, the resultant tar file is 2.4GB.  Use sftp rather than scp
+to transfer the file to z/OS® UNIX System Services (z/OS UNIX). 
+Due to large file size use md5sum to verify the hash on 
+each platform like so:
 
-#### USS platform setup
+```
+$ md5sum x.tar
+```
 
-This is the workflow on the USS platform.
+
+#### z/OS® UNIX System Services (z/OS UNIX) platform setup
+
+This is the workflow on the z/OS® UNIX System Services (z/OS UNIX) platform.
 
 ##### Do this once
 
