@@ -11,14 +11,14 @@ Since the [cipd executable](https://chromium.googlesource.com/infra/luci/luci-go
 currently used to update V8 and its dependencies, and apply the z/OS port, after
 the initial [fetch v8](https://v8.dev/docs/source-code) (also included below with a comment).
 
-This workflow requires two platforms.  One is z/OS® UNIX System Services (z/OS UNIX) which is the target platform.  The second is a generic linux
-AMD64 platform to get files normally acquired via `cipd`
+This workflow requires two platforms.  One a z/OS® UNIX System Services (z/OS UNIX) which is 
+the target platform.  The second is a generic platform used to get files normally acquired via `cipd`.
 
 
 #### Linux plaform (non z/OS® UNIX System Services (z/OS UNIX)) setup
 
-This is the workflow on the non z/OS® UNIX System Services (z/OS UNIX) platform for obtaining files via `cipd`.  Do
-this once.
+This is the workflow on the non-z/OS UNIX platform for obtaining files via `cipd`.  
+This workflow is done once.
 
 ```
 $ cd $HOME
