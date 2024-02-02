@@ -18,6 +18,9 @@ the target platform.  The second is a generic platform used to get files normall
 #### Linux plaform (non z/OS® UNIX System Services (z/OS UNIX)) setup
 
 This is the workflow on the non-z/OS UNIX platform for obtaining files via `cipd`.  
+There are two aspects to this workflow.  One which is done once and one which
+is done everytime you want to sync.
+
 This workflow is done once.
 
 ```
@@ -25,8 +28,13 @@ $ cd $HOME
 $ git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
 $ export PATH=~/depot_tools:$PATH
 $ fetch v8
-$ cd v8
+$ cd $HOME/v8
 $ git checkout main
+```
+This workflow is done afterwards and everytime you want to sync.
+
+```
+$ cd $HOME/v8
 $ git reset fce38915e4c7c73c0e7f77bb13e2a78514968d35 --hard
 $ tar -cvf x.tar test tools third_party
 ```
@@ -44,6 +52,10 @@ $ md5sum x.tar
 #### z/OS® UNIX System Services (z/OS UNIX) platform setup
 
 This is the workflow on the z/OS® UNIX System Services (z/OS UNIX) platform.
+
+It assumes you are using z/OS Open Tools framework and the associated install
+of depot_toolsport.  Follow the workflow described [here](https://github.com/ZOSOpenTools/depot_toolsport?tab=readme-ov-file#developer-notes) to ensure you have deeopot tools properly installed 
+and configured.
 
 ##### Do this once
 
@@ -76,51 +88,46 @@ The reset command is required as the current patches are valid as of the specifi
 $ cd $HOME/zopen/dev/v8base/v8
 $ git pull
 $ git reset fce38915e4c7c73c0e7f77bb13e2a78514968d35 --hard
-$ gclient sync
+$ gclient sync -D
 $ rm -rf test tools third_party
 ```
 
 At this point the file system is ready to be suplemented with the files
-in the tar file from the Linux AMD64 platform.
+in the tar file from the non z/OS UNIX platform.
 
 ```
 $ cd $HOME/zopen/dev/v8base/v8
 $ tar -xvf ~/zopen/x.tar
 ```
 
-Output:
+Then make sure all the files are properly tagged as ASCII:
 
 ```
-JD895801@USILCA31 v8 (main)
-$ tar -xvf ~/zopen/x.tar
-tar: This does not look like a tar archive
-tar: Skipping to next header
-\244\201\223\242M\363k@\201\204\204M\207k@\206]]^\025
-tar: Skipping to next header
-\345\301\323\344\305@L@N\311\225\206\211\225\211\243\250]@~~~@\243\231\244\205}]^\025\320\025
-tar: Skipping to next header
-a\025\025\211\206@M\243\231\244\205]@\300\025@@\211\224\227\226\231\243M}}]^\025\320\025
-tar: Skipping to next header
-tar: Exiting with failure status due to previous errors
-JD895801@USILCA31 v8 (main)
-$ type tar
-tar is hashed (/z/jd895801/zopen/usr/local/bin/tar)
+$ cd $HOME/zopen/dev/v8base/v8
+$ chtag -tc819 -R test tools third_party
 ```
 
+Optionally remove the tar file as its not longer needed.  It will 
+need to be replaced if sync is performed, however keep in mind
+this will also require the workflow on the non z/OS UNIX system 
+to recreate it.
 
-Then on the z/OS machine:
 ```
-cd v8
-# extract the archive:
-tar -xvf x.tar
-# tag all files in those directories as ASCII:
-chtag -tc819 -R test tools third_party
-rm x.tar
+$ rm x.tar
 ```
 
 Ensure that the head commit on both z/OS and the other platform are the same; if
 not then `git reset <commit> --hard` on z/OS to match the commit on the other
 platform.
+
+On each system:
+
+```
+$ git log --oneline
+```
+Ensure that the commit hash on each platform at the top matches.
+
+##### Apply patches and pax files on z/OS UNIX platform
 
 The .pax files contain only z/OS files, and are intended to easily extract its
 content to include those files' directories. Those files are also available in
@@ -134,34 +141,56 @@ repository at the time of the pull.
 From your local V8 repository or dependency, run `git apply` on the
 `git.<date>.<commit>.diff` file that's under the corresponding directory in
 v8port/patches/. Adjust the path to v8port to match your environment. Example:
+
+##### Patch Workflow
+
+This is a large patch which updates multiple portions of the codebase.
 ```
-cd v8
-git apply ~/v8port/patches/git.20231122.fce38915e4.diff
-
-pushd build
-git apply ~/v8port/patches/build/git.20231122.968682938b.diff
-popd
-
-pushd third_party/abseil-cpp
-git apply ~/v8port/patches/third_party/abseil-cpp/git.20231122.1e8861f03f.diff
-popd
-
-pushd third_party/googletest/src
-git apply ~/v8port/patches/third_party/googletest/src/git.20231122.af29db7ec2.diff
-popd
+$ cd $HOME/zopen/dev/v8base/v8
+$ git apply ../../v8port/patches/git.20231122.fce38915e4.diff
 ```
-# Files specific to z/OS only
+
+This is a small patch which updates the toolchain config.
+```
+$ cd $HOME/zopen/dev/v8base/v8
+$ pushd build
+$ git apply ../../../v8port/patches/build/git.20231122.968682938b.diff
+$ popd
+```
+From this point forward, `pushd/popd` is used so that the directory
+is not specifed each time.
+
+This is a small patch which updates the third-party abseil common c++ libaries.
+```
+$ pushd third_party/abseil-cpp
+$ git apply ../../../../v8port/patches/third_party/abseil-cpp/git.20231122.1e8861f03f.diff
+$ popd
+```
+
+This is a tiny patch which adds a new ZOS platform to google test.
+```
+$ pushd third_party/googletest/src
+$ git apply ../../../../../v8port/patches/third_party/googletest/src/git.20231122.af29db7ec2.diff
+$ popd
+```
+
+
+##### PAX Workflow
+
 Extract the files from the .pax files, by running `pax -p p -rzf <pax-file>`,
 using the same approach. Example:
 
 ```
-cd v8
-pax -p p -rzf ~/v8port/patches/src.zos.20231122.fce38915e4.pax
+$ cd $HOME/zopen/dev/v8base/v8
+$ pax -p p -rzf ../../v8port/patches/src.zos.20231122.fce38915e4.pax
 
-pushd buildtools
-pax -p p -rzf ~/v8port/patches/buildtools/buildtools.zos.20231122.92b79f4d75.pax
-popd
+$ pushd buildtools
+$ pax -p p -rzf ../../../v8port/patches/buildtools/buildtools.zos.20231122.92b79f4d75.pax
+$ popd
 ```
+
+TODO: resume here
+
 # Download, build and install zoslib:
 ```
 pushd v8/third_party
