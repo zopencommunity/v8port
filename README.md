@@ -15,7 +15,7 @@ This workflow requires two platforms.  One a z/OS® UNIX System Services (z/OS U
 the target platform.  The second is a generic platform used to get files normally acquired via `cipd`.
 
 
-#### Linux plaform (non z/OS® UNIX System Services (z/OS UNIX)) setup
+#### Linux platform (non z/OS® UNIX System Services (z/OS UNIX)) setup
 
 This is the workflow on the non-z/OS UNIX platform for obtaining files via `cipd`.  
 There are two aspects to this workflow.  One which is done once and one which
@@ -79,7 +79,7 @@ $ git checkout main
 
 ##### Do this afterwards and everytime you need to sync
 
-Once you have done the intial setup above, these are the
+Once you have done the initial setup above, these are the
 steps to sync the code to the specified revision and apply the corresponding
 files from the Linux AMD64 platform for the files normally 
 acquired via `cipd`.
