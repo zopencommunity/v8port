@@ -196,7 +196,8 @@ $ popd
 ```
 $ cd $HOME/zopen/dev/v8base/v8
 $ pushd third_party
-$ git clone git@github.com:ibmruntimes/zoslib && cd zoslib
+$ git clone git@github.com:ibmruntimes/zoslib 
+$ cd zoslib
 $ ./build.sh -c -r -t
 $ popd
 ```
