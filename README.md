@@ -202,7 +202,7 @@ $ cd zoslib
 Ensure the toolchain is set properly.
 
 ```
-$ export CC=CLANG
+$ export CC=clang
 $ export CXX=clang++
 $ export LINK=$CXX
 ```
