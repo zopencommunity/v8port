@@ -35,7 +35,9 @@ This workflow is done afterwards and everytime you want to sync.
 
 ```
 $ cd $HOME/v8
+$ git pull
 $ git reset fce38915e4c7c73c0e7f77bb13e2a78514968d35 --hard
+$ gclient sync
 $ tar -cvf x.tar test tools third_party
 ```
 
@@ -232,9 +234,18 @@ $ export ZOSLIB_LIBPATH=`pwd`/third_party/zoslib/install/lib
 ##### Build V8
 
 
+Prepare v8 for building.
+
 ```
 $ cd $HOME/zopen/dev/v8base/v8
 $ export PATH=`pwd`/buildtools/zos:$PATH # for the 'ar' wrapper
+$ pushd buildtools/zos
+$ ln -s $HOME/zopen/dev/gnport/gn/out/gn .
+$ popd
+```
+
+
+```
 $ gn -v gen out/zos_s390x.release --args="is_debug=false treat_warnings_as_errors=false" V=1 ninja -v -j 12 -C out/zos_s390x.release/
 ```
 
@@ -242,8 +253,13 @@ $ gn -v gen out/zos_s390x.release --args="is_debug=false treat_warnings_as_error
 output:
 
 ```
+$ pwd
+/z/jd895801/zopen/dev/v8base/v8
+(myenv) JD895801@USILCA31 v8 (main)
 $ gn -v gen out/zos_s390x.release --args="is_debug=false treat_warnings_as_errors=false" V=1 ninja -v -j 12 -C out/zos_s390x.release/
-gn.py: Could not find gn executable at: /z/jd895801/zopen/dev/v8base/v8/buildtools/zos/gn
+ERROR Need exactly one build directory to generate.
+I expected something more like "gn gen out/foo"
+You can also see "gn help gen".
 ```
 
 
