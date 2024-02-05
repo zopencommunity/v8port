@@ -189,24 +189,83 @@ $ pax -p p -rzf ../../../v8port/patches/buildtools/buildtools.zos.20231122.92b79
 $ popd
 ```
 
-TODO: resume here
 
-# Download, build and install zoslib:
+##### Download, build and install zoslib:
+
+
 ```
-pushd v8/third_party
-git clone git@github.com:ibmruntimes/zoslib && cd zoslib
-./build.sh -c -r -t
-popd
+$ cd $HOME/zopen/dev/v8base/v8
+$ pushd third_party
+$ git clone git@github.com:ibmruntimes/zoslib && cd zoslib
+$ ./build.sh -c -r -t
+$ popd
 ```
+
+Output:
+
+```
+$ ./build.sh -c -r -t
+~/zopen/dev/v8base/v8/third_party/zoslib/build ~/zopen/dev/v8base/v8/third_party/zoslib
+-- The CXX compiler identification is unknown
+-- The C compiler identification is unknown
+-- The ASM compiler identification is GNU
+-- Found assembler: /bin/xlclang
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - failed
+-- Check for working CXX compiler: /bin/xlclang++
+-- Check for working CXX compiler: /bin/xlclang++ - broken
+'[31mCMake Error at /z/jd895801/zopen/usr/local/zopen/cmake/CMake-heads.v3.27.8.20231124_184234.zos/share/cmake-3.27/Modules/CMakeTestCXXCompiler.cmake:60 (message):
+  The C++ compiler
+
+    "/bin/xlclang++"
+
+  is not able to compile a simple test program.
+
+  It fails with the following output:
+
+    Change Dir: '/z/jd895801/zopen/dev/v8base/v8/third_party/zoslib/build/CMakeFiles/CMakeScratch/TryCompile-ajoetb'
+
+    Run Build Command(s): /z/jd895801/zopen/usr/local/zopen/cmake/CMake-heads.v3.27.8.20231124_184234.zos/bin/cmake -E env VERBOSE=1 /z/jd895801/zopen/usr/local/bin/make -f Makefile cmTC_ed5d5/fast
+    /z/jd895801/zopen/usr/local/bin/make  -f CMakeFiles/cmTC_ed5d5.dir/build.make CMakeFiles/cmTC_ed5d5.dir/build
+    make[1]: Entering directory '/z/jd895801/zopen/dev/v8base/v8/third_party/zoslib/build/CMakeFiles/CMakeScratch/TryCompile-ajoetb'
+    Building CXX object CMakeFiles/cmTC_ed5d5.dir/testCXXCompiler.cxx.o
+    /bin/xlclang++    -o CMakeFiles/cmTC_ed5d5.dir/testCXXCompiler.cxx.o -c /z/jd895801/zopen/dev/v8base/v8/third_party/zoslib/build/CMakeFiles/CMakeScratch/TryCompile-ajoetb/testCXXCompiler.cxx
+    FSUM3224 xlclang++: Fatal error in /usr/lpp/cbclib/xlclang/exe/clcdrvr: signal 9 received.
+    make[1]: *** [CMakeFiles/cmTC_ed5d5.dir/build.make:78: CMakeFiles/cmTC_ed5d5.dir/testCXXCompiler.cxx.o] Error 251
+    make[1]: Leaving directory '/z/jd895801/zopen/dev/v8base/v8/third_party/zoslib/build/CMakeFiles/CMakeScratch/TryCompile-ajoetb'
+    make: *** [Makefile:127: cmTC_ed5d5/fast] Error 2
+
+
+
+
+
+  CMake will not be able to correctly generate this project.
+Call Stack (most recent call first):
+  CMakeLists.txt:10 (project)
+
+'[0m
+-- Configuring incomplete, errors occurred!
+
+```
+
+
 Even though zoslib is built as part of V8 as a static library, the shared
 library version currently has to be built manually, and is used by
 `IsS390SimdSupported()` in `tools/testrunner/local/utils.py`, where it's
 dynamically loaded, with its directory extracted from the `ZOSLIB_LIBPATH`
 environment variable. So set the variable before running the tests:
+
+
+
 ```
 cd v8
 export ZOSLIB_LIBPATH=`pwd`/third_party/zoslib/install/lib
 ```
+TODO: resume here
+
+
+
+
 # Build V8
 ```
 cd v8
