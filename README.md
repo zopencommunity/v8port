@@ -118,16 +118,13 @@ to recreate it.
 $ rm x.tar
 ```
 
-Ensure that the head commit on both z/OS and the other platform are the same; if
-not then `git reset <commit> --hard` on z/OS to match the commit on the other
-platform.
+Ensure that the commit hash on each platform at the top matches.
 
 On each system:
 
 ```
 $ git log --oneline
 ```
-Ensure that the commit hash on each platform at the top matches.
 
 ##### Apply patches and pax files on z/OS UNIX platform
 
