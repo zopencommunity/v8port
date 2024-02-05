@@ -246,20 +246,55 @@ $ popd
 
 
 ```
-$ gn -v gen out/zos_s390x.release --args="is_debug=false treat_warnings_as_errors=false" V=1 ninja -v -j 12 -C out/zos_s390x.release/
+$ gn -v gen out/zos_s390x.release --args="is_debug=false treat_warnings_as_errors=false" 
+$ V=1 ninja -v -j 12 -C out/zos_s390x.release/
 ```
 
+The gn command looks like it worked.
 
 output:
 
 ```
-$ pwd
-/z/jd895801/zopen/dev/v8base/v8
-(myenv) JD895801@USILCA31 v8 (main)
-$ gn -v gen out/zos_s390x.release --args="is_debug=false treat_warnings_as_errors=false" V=1 ninja -v -j 12 -C out/zos_s390x.release/
-ERROR Need exactly one build directory to generate.
-I expected something more like "gn gen out/foo"
-You can also see "gn help gen".
+... stuff ommitted
+Computing //test/unittests:generate-bytecode-expectations(//build/toolchain/zos:s390x)
+Computing //test/unittests:inspector_unittests_sources(//build/toolchain/zos:s390x)
+Computing //test:gn_all(//build/toolchain/zos:s390x)
+Computing //:gn_all(//build/toolchain/zos:s390x)
+Computing //test/unittests:v8_heap_base_unittests_sources(//build/toolchain/zos:s390x)
+Build graph constructed in 2810ms
+Done. Made 494 targets from 126 files in 2824ms
 ```
+
+The next command failed though.
+
+output:
+
+```
+$ V=1 ninja -v -j 12 -C out/zos_s390x.release/
+Traceback (most recent call last):
+  File "/z/jd895801/zopen/dev/depot_toolsport/depot_tools/ninja.py", line 94, in <module>
+    sys.exit(main(sys.argv))
+             ^^^^^^^^^^^^^^
+  File "/z/jd895801/zopen/dev/depot_toolsport/depot_tools/ninja.py", line 87, in main
+    return subprocess.call([ninja_path] + args[1:])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lpp/IBM/cyp/v3r11/pyz/lib/python3.11/subprocess.py", line 389, in call
+    with Popen(*popenargs, **kwargs) as p:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lpp/IBM/cyp/v3r11/pyz/lib/python3.11/subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "/usr/lpp/IBM/cyp/v3r11/pyz/lib/python3.11/subprocess.py", line 1950, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+OSError: [Errno 130] EDC5130I Exec format error.: '/z/jd895801/zopen/dev/v8base/v8/third_party/ninja/ninja'
+(myenv) JD895801@USILCA31 v8 (main)
+```
+
+This is where I am picking up ninja
+
+```
+$ type ninja
+ninja is hashed (/z/jd895801/zopen/dev/depot_toolsport/depot_tools/ninja)
+```
+
 
 
