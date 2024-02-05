@@ -56,7 +56,7 @@ $ md5sum x.tar
 This is the workflow on the z/OS® UNIX System Services (z/OS UNIX) platform.
 
 It assumes you are using z/OS Open Tools framework and the associated install
-of depot_toolsport.  Follow the workflow described [here](https://github.com/ZOSOpenTools/depot_toolsport?tab=readme-ov-file#developer-notes) to ensure you have deeopot tools properly installed 
+of depot_toolsport.  Follow the workflow described [here](https://github.com/ZOSOpenTools/depot_toolsport?tab=readme-ov-file#developer-notes) to ensure you have depot tools properly installed 
 and configured.
 
 ##### Do this once
