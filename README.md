@@ -1,12 +1,39 @@
 [![Automatic version updates](https://github.com/ZOSOpenTools/v8port/actions/workflows/bump.yml/badge.svg)](https://github.com/ZOSOpenTools/v8port/actions/workflows/bump.yml)
 
-# v8
+# v8 port
 
 A port of Google V8 JavaScript engine to z/OS Open Tools project
 
-## Workflow 
+The upstream for v8 is [here.](https://v8.dev)
 
-### Applying the patches
+## Developer Notes
+
+### Prerequisite
+
+The manual workflow to build v8port requires the following:
+
+* python
+    - tested with python 3.11 from base z/OS install
+* ninja from z/OS Open Tools [ninjaport](https://github.com/ZOSOpenTools/ninjaport)
+* gn from zos open tools [gnport](https://github.com/ZOSOpenTools/gnport)
+    - clang++ from [IBM C/C++ for Open Enterprise Languages on z/OS 2.0](https://epwt-www.mybluemix.net/software/support/trial/cst/programwebsite.wss?siteId=1803)
+    ```
+    $ clang++ --version
+    C/C++ for Open Enterprise Languages on z/OS 2.0.0, clang version 14.0.0 (build 37a9321)
+    Target: s390x-ibm-zos
+    Thread model: posix
+    InstalledDir: /C/CCplus/LangV2GA/usr/lpp/IBM/oelcpp/v2r0/bin
+    ```
+* depot_tools port  zos open tools depot_toolsport
+* zoslib
+    - The manual workflow provides instructions on how to install this.  However, 
+    its noted here to catalog the compiler.
+
+
+
+## Manual Workflow 
+
+#### Applying the patches
 Since the [cipd executable](https://chromium.googlesource.com/infra/luci/luci-go/+/master/cipd/) is not yet ported on z/OS, the following steps are
 currently used to update V8 and its dependencies, and apply the z/OS port, after
 the initial [fetch v8](https://v8.dev/docs/source-code) (also included below with a comment).
@@ -15,7 +42,7 @@ This workflow requires two platforms.  One a z/OS® UNIX System Services (z/OS U
 the target platform.  The second is a generic platform used to get files normally acquired via `cipd`.
 
 
-#### Linux platform (non z/OS® UNIX System Services (z/OS UNIX)) setup
+### Linux platform (non z/OS® UNIX System Services (z/OS UNIX)) setup
 
 This is the workflow on the non-z/OS UNIX platform for obtaining files via `cipd`.  
 There are two aspects to this workflow.  One which is done once and one which
@@ -27,6 +54,18 @@ This workflow is done once.
 $ cd $HOME
 $ git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
 $ export PATH=~/depot_tools:$PATH
+```
+
+As an aside, if you have done this already and you are trying to repeat
+from a pristine state, remove all the old `.gclient*` files at the 
+level of v8 before continuing.
+
+```
+$ cd $HOME
+$ rm .gclient*
+```
+
+```
 $ fetch v8
 $ cd $HOME/v8
 $ git checkout main
@@ -37,7 +76,7 @@ This workflow is done afterwards and everytime you want to sync.
 $ cd $HOME/v8
 $ git pull
 $ git reset fce38915e4c7c73c0e7f77bb13e2a78514968d35 --hard
-$ gclient sync
+$ gclient sync -D
 $ tar -cvf x.tar test tools third_party
 ```
 
@@ -51,7 +90,7 @@ $ md5sum x.tar
 ```
 
 
-#### z/OS® UNIX System Services (z/OS UNIX) platform setup
+### z/OS® UNIX System Services (z/OS UNIX) platform setup
 
 This is the workflow on the z/OS® UNIX System Services (z/OS UNIX) platform.
 
