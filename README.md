@@ -1,10 +1,35 @@
 [![Automatic version updates](https://github.com/ZOSOpenTools/v8port/actions/workflows/bump.yml/badge.svg)](https://github.com/ZOSOpenTools/v8port/actions/workflows/bump.yml)
 
-# v8
+# v8 port
 
 A port of Google V8 JavaScript engine to z/OS Open Tools project
 
-## Workflow 
+The upstream for v8 is [here.](https://v8.dev)
+
+## Developer Notes
+
+### Prerequisite
+
+The manual workflow to build v8port requires the following:
+
+* python
+    - tested with python 3.11 from base z/OS install
+* ninja from z/OS Open Tools [ninjaport](https://github.com/ZOSOpenTools/ninjaport)
+* gn from zos open tools [gnport](https://github.com/ZOSOpenTools/gnport)
+    - clang++ from [IBM C/C++ for Open Enterprise Languages on z/OS 2.0](https://epwt-www.mybluemix.net/software/support/trial/cst/programwebsite.wss?siteId=1803)
+    ```
+    $ clang++ --version
+    C/C++ for Open Enterprise Languages on z/OS 2.0.0, clang version 14.0.0 (build 37a9321)
+    Target: s390x-ibm-zos
+    Thread model: posix
+    InstalledDir: /C/CCplus/LangV2GA/usr/lpp/IBM/oelcpp/v2r0/bin
+    ```
+* depot_tools port  zos open tools depot_toolsport
+* zoslib
+
+
+
+## Manual Workflow 
 
 ### Applying the patches
 Since the [cipd executable](https://chromium.googlesource.com/infra/luci/luci-go/+/master/cipd/) is not yet ported on z/OS, the following steps are
