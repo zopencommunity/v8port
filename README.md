@@ -27,7 +27,15 @@ The manual workflow to build v8port requires the following:
 * depot_tools port  zos open tools depot_toolsport
 * zoslib
     - The manual workflow provides instructions on how to install this.  However, 
-    its noted here to catalog the compiler.
+    its noted here to catalog the compiler.  With that said, it uses the same `clang++` above and
+    `clang` from the same package.
+    ```
+    $ clang --version
+    C/C++ for Open Enterprise Languages on z/OS 2.0.0, clang version 14.0.0 (build 37a9321)
+    Target: s390x-ibm-zos
+    Thread model: posix
+    InstalledDir: /C/CCplus/LangV2GA/usr/lpp/IBM/oelcpp/v2r0/bin
+    ```
 
 
 
@@ -138,7 +146,7 @@ in the tar file from the non z/OS UNIX platform.
 
 ```
 $ cd $HOME/zopen/dev/v8base/v8
-$ tar -xvf ~/zopen/x.tar
+$ tar -xvf $HOME/zopen/x.tar
 ```
 
 Then make sure all the files are properly tagged as ASCII:
@@ -237,18 +245,19 @@ $ git clone git@github.com:ibmruntimes/zoslib
 $ cd zoslib
 ```
 
-Ensure the toolchain is set properly.
+Ensure the toolchain is set properly.  These settings
+are also made in the depot_toolsport/setenv.sh script.
 
 ```
 $ export CC=clang
 $ export CXX=clang++
-$ export LINK=$CXX
+$ export LINK=clang++
 ```
 
 Build zoslib.
 
 ```
-$ cd $HOME/zopen/dev/v8base/v8/third_party/v8
+$ cd $HOME/zopen/dev/v8base/v8/third_party/zoslib
 $ ./build.sh -c -r -t
 ```
 
