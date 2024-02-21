@@ -1,11 +1,15 @@
-export ZOPEN_BUILD_LINE="DEV"
-# IGOR: We are not using git to clone this repo.  We use fetch from
-# depot tools to "clone" it.  I'm putting here to bypass checks
-# but is there a better way to do this?
-export ZOPEN_DEV_URL="https://chromium.googlesource.com/v8/v8"
-export ZOPEN_DEV_DEPS="depot_tools zoslib cmake make python gn ninja git comp_clang"
-export ZOPEN_RUNTIME_DEPS="zoslib"
-export ZOPEN_BOOTSTRAP="python"
+# This package does not use a git clone URL.  Instead it uses
+# the depot tools package to peform a fetch.  Fetch is part
+# of the depot tools package toolchain.  So, in this case
+# ZOPEN_BUILD_LINE and ZOPEN_DEV_URL are unspecified and 
+# ZOPEN_TYPE is set to BARE.  Also, in this case, do 
+# not use ZOPEN_DEV_DEPS.  Instead use ZOPEN_DEPS.
+# Use zopen build -vv to see if the dependencies are being processed
+export ZOPEN_TYPE="BARE"
+export ZOPEN_DEPS="depot_tools zoslib cmake make python gn ninja git comp_clang"
+
+export ZOPEN_RUNTIME_DEPS="zoslib python"
+export ZOPEN_BOOTSTRAP="python3"
 # Nothing to configure or build:
 export ZOPEN_CONFIGURE="skip"
 export ZOPEN_MAKE="skip"
@@ -66,7 +70,7 @@ zopen_init()
   # depot_tools creates the venv, here we ensure the necessary packages are installed
   # Activate the path
   echo "activating the virtual env - venv"
-  . ${ZOPEN_PKGINSTAL}/depot_tools/depot_tools-main//venv/bin/activate
+  . ${ZOPEN_PKGINSTALL}/depot_tools/depot_tools-main//venv/bin/activate
 
   # Update the virtual env
   echo "updating the virtual env pip"
