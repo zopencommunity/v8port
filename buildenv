@@ -1,26 +1,24 @@
 # This package does not use a git clone URL.  Instead it uses
-# the depot tools package to peform a fetch.  Fetch is part
-# of the depot tools package toolchain.  So, in this case
+# the depot tools package to peform a fetch.  Fetch, gclient etc
+# are included in the depot tools package toolchain. Consquently,
 # ZOPEN_BUILD_LINE and ZOPEN_DEV_URL are unspecified and 
 # ZOPEN_TYPE is set to BARE.  Also, in this case, do 
 # not use ZOPEN_DEV_DEPS.  Instead use ZOPEN_DEPS.
+#
 # Use zopen build -vv to see if the dependencies are being processed
 export ZOPEN_TYPE="BARE"
 export ZOPEN_DEPS="depot_tools zoslib cmake make python gn ninja git comp_clang"
 
 export ZOPEN_RUNTIME_DEPS="zoslib python"
-export ZOPEN_BOOTSTRAP="python3"
-# Nothing to configure or build:
+# Nothing to configure or build:?
 export ZOPEN_CONFIGURE="skip"
-export ZOPEN_MAKE="skip"
+#export ZOPEN_MAKE="skip"
+export ZOPEN_MAKE="zopen_build"
+
 export ZOPEN_INSTALL="zopen_install"
 export ZOPEN_CATEGORIES="development language core"
 
-# Set the python dir after buildenv deps are checked
-zopen_pre_patch() {
-  export ZOPEN_PYTHONDIR=`type python3 | head -1 | sed "s:^.*[ (]/:/:;s:)$::"`
-  export ZOPEN_BOOTSTRAP_OPTS="bootstrap/bootstrap.py --bootstrap-name ${ZOPEN_PYTHONDIR}"
-}
+
 
 
 zopen_check_results()
@@ -43,7 +41,7 @@ zopen_get_version()
   echo "1.0.0"
 }
 
-# This is called first?
+# This is called first
 zopen_init()
 {
   # Check for python
@@ -86,3 +84,9 @@ zopen_init()
 
 }
 
+# This is called second
+zopen_build() {
+  mkdir v8base
+  cd v8base
+  fetch v8
+}
