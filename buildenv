@@ -59,51 +59,18 @@ zopen_init()
   fi
 
 
-  # Ensure path is correct for depot tools installation
-  desired_path="zopen/usr/local/zopen/depot_tools/depot_tools-main"
-
-  if  expr "${PATH}" : ".*${desired_path}.*" 1>/dev/null ; then
-    echo "Good. depot_tools is in path."
-  else
-    echo "Path to depot_tools missing.  Adding it to path.."
-    export PATH=${PATH}:${HOME}/${desired_path}
-  fi
-
-  # update the path for depot_tools
-  # update the path for pip
-  export PATH=${PATH}:${HOME}/.local/bin
-
-  # update the compiler settings
-  # TODO: this can probably be moved to v8 build later
-  export CC=clang
-  export CXX=clang++
-  export LINK=clang++
-
-  # Disable updating depot_tools
-  export DEPOT_TOOLS_UPDATE=0
-
-  # Disable commands:
-  # * ensure_bootstrap
-  # * update_depot_tools
-  export DEPOT_TOOLS_BOOTSTRAP_PYTHON3=0
-
-
-
-
-
 }
 
 # Called Second.
 zopen_build() {
   echo "### zopen_build ###"
-
 }
 
 
 # Called Third
 zopen_install() {
   echo "### zopen_install ###"
-  # ZOPEN_INSTALL_DIR: /z/jd895801/zopen/usr/local/zopen/v8/v8-DEV
+  # ZOPEN_INSTALL_DIR: ${HOME}/zopen/usr/local/zopen/v8/v8-DEV
   # Current directory is top level of the repo since zopen_build has run
 
   mkdir -p ${ZOPEN_INSTALL_DIR}
@@ -159,6 +126,42 @@ zopen_append_to_setup()
   # At this time, ZOPEN_INSTAL_DIR is:
   # ${HOME}/zopen/usr/local/zopen/v8/v8-DEV
 
+  echo "echo \"append_to_setup()\""
+
+  # Ensure path is correct for depot tools installation
+  echo "desired_path=\"zopen/usr/local/zopen/depot_tools/depot_tools-main\""
+
+  echo "if  expr \"${PATH}\" : \".*${desired_path}.*\" 1>/dev/null ; then"
+  echo "  echo \"Good. depot_tools is in path.\""
+  echo "else"
+  echo "  echo \"Path to depot_tools missing.  Adding it to path..\""
+  echo "  export PATH=${PATH}:${HOME}/${desired_path}"
+  echo "fi"
+
+  echo "echo \"ensure path is correct\""
+  echo "echo \"PATH:  ${PATH}\""
+
+  # update the path for depot_tools
+  # update the path for pip
+  echo "export PATH=${PATH}:${HOME}/.local/bin"
+
+  # update the compiler settings
+  # TODO: this can probably be moved to v8 build later
+  echo "export CC=clang"
+  echo "export CXX=clang++"
+  echo "export LINK=clang++"
+
+  # Disable updating depot_tools
+  echo "export DEPOT_TOOLS_UPDATE=0"
+
+  # Disable commands:
+  # * ensure_bootstrap
+  # * update_depot_tools
+  echo "export DEPOT_TOOLS_BOOTSTRAP_PYTHON3=0"
+
+
+
+
   # Create the virtual env in the v8port install dir
   echo "echo \"    Creating a python venv...\""
   echo "python3 -m venv venv"
@@ -184,7 +187,19 @@ zopen_append_to_setup()
   echo "mkdir v8base"
   # change into v8base
   echo "cd v8base"
+  # fetch
   echo "fetch v8"
+  # checkout main
+  echo "git checkout main"
+  # pull
+  echo "git pull"
+  # use the specified commit hash
+  echo "git reset fce38915e4c7c73c0e7f77bb13e2a78514968d35 --hard"
+  # Use depot tools gclient sync
+  echo "gclient sync -D"
+
+
+
   # on exit return to the top level of the git repo
   echo "cd .."
 }
