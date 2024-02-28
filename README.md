@@ -310,7 +310,7 @@ This is the workflow for building v8 using the z/OS Open Tools framework.
     - `$ git clone git@github.com:ZOSOpenTools/v8port.git`
 3. Start the build process
     - `$ cd ${HOME}/zopen/dev/v8port`
-    - `$ rm -rf ~/.local v8base install ${HOME}/zopen/usr/local/zopen/v8; zopen build`
+    - `$ rm -rf ~/.local v8base install ${HOME}/zopen/usr/local/zopen/v8 venv log; zopen build`
 
 It will create a venv in `${HOME}/zopen/usr/local/zopen/v8/v8-DEV/venv`.
 The v8port `buildenv` file will setup config the environment to 
