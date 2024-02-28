@@ -63,7 +63,85 @@ zopen_init()
 
 # Called Second.
 zopen_build() {
+
   echo "### zopen_build ###"
+
+  # Ensure path is correct for depot tools installation
+  desired_path="zopen/usr/local/zopen/depot_tools/depot_tools-main"
+
+  if  expr "${PATH}" : ".*${desired_path}.*" 1>/dev/null ; then
+    echo "Good. depot_tools is in path."
+  else
+    echo "Path to depot_tools missing.  Adding it to path.."
+    export PATH=${PATH}:${HOME}/${desired_path}
+  fi
+
+  echo "ensure path is correct"
+  echo "PATH:  ${PATH}"
+
+  # update the path for depot_tools
+  # update the path for pip
+  export PATH=${PATH}:${HOME}/.local/bin
+
+  # update the compiler settings
+  # TODO: this can probably be moved to v8 build later
+  export CC=clang
+  export CXX=clang++
+  export LINK=clang++
+
+  # Disable updating depot_tools
+  export DEPOT_TOOLS_UPDATE=0
+
+  # Disable commands:
+  # * ensure_bootstrap
+  # * update_depot_tools
+  export DEPOT_TOOLS_BOOTSTRAP_PYTHON3=0
+
+
+
+
+  # Create the virtual env in the v8port install dir
+  echo "    Creating a python venv..."
+  python3 -m venv venv
+
+
+  # depot_tools creates the venv, here we ensure the necessary packages are installed
+  # Activate the path
+  echo "activating the virtual env - venv"
+  #. ${ZOPEN_PKGINSTALL}/v8/v8-DEV/venv/bin/activate
+  . venv/bin/activate
+
+  # Update the virtual env
+  echo "updating the virtual env pip"
+  python -m pip install -U pip
+
+  # Install the necessary requirements
+  #pip install -r ${ZOPEN_PKGINSTALL}/v8/v8-DEV/requirements.txt
+  pip install -r requirements.txt
+
+  # Using depot_tools disable metrics.
+  # Comment out this line if you wish to participate.
+  gclient metrics --opt-out
+
+  # Now you can start the fetch
+  mkdir v8base
+  # change into v8base
+  cd v8base
+  # fetch
+  fetch v8
+  # checkout main
+  git checkout main
+  # pull
+  git pull
+  # use the specified commit hash
+  git reset fce38915e4c7c73c0e7f77bb13e2a78514968d35 --hard
+  # Use depot tools gclient sync
+  gclient sync -D
+
+
+
+  # on exit return to the top level of the git repo
+  cd ..
 }
 
 
@@ -128,80 +206,6 @@ zopen_append_to_setup()
 
   echo "echo \"append_to_setup()\""
 
-  # Ensure path is correct for depot tools installation
-  echo "desired_path=\"zopen/usr/local/zopen/depot_tools/depot_tools-main\""
-
-  echo "if  expr \"${PATH}\" : \".*${desired_path}.*\" 1>/dev/null ; then"
-  echo "  echo \"Good. depot_tools is in path.\""
-  echo "else"
-  echo "  echo \"Path to depot_tools missing.  Adding it to path..\""
-  echo "  export PATH=${PATH}:${HOME}/${desired_path}"
-  echo "fi"
-
-  echo "echo \"ensure path is correct\""
-  echo "echo \"PATH:  ${PATH}\""
-
-  # update the path for depot_tools
-  # update the path for pip
-  echo "export PATH=${PATH}:${HOME}/.local/bin"
-
-  # update the compiler settings
-  # TODO: this can probably be moved to v8 build later
-  echo "export CC=clang"
-  echo "export CXX=clang++"
-  echo "export LINK=clang++"
-
-  # Disable updating depot_tools
-  echo "export DEPOT_TOOLS_UPDATE=0"
-
-  # Disable commands:
-  # * ensure_bootstrap
-  # * update_depot_tools
-  echo "export DEPOT_TOOLS_BOOTSTRAP_PYTHON3=0"
-
-
-
-
-  # Create the virtual env in the v8port install dir
-  echo "echo \"    Creating a python venv...\""
-  echo "python3 -m venv venv"
-
-
-  # depot_tools creates the venv, here we ensure the necessary packages are installed
-  # Activate the path
-  echo "echo \"activating the virtual env - venv\""
-  echo ". ${ZOPEN_PKGINSTALL}/v8/v8-DEV/venv/bin/activate"
-
-  # Update the virtual env
-  echo "echo \"updating the virtual env pip\""
-  echo "python -m pip install -U pip"
-
-  # Install the necessary requirements
-  echo "pip install -r ${ZOPEN_PKGINSTALL}/v8/v8-DEV/requirements.txt"
-
-  # Using depot_tools disable metrics.
-  # Comment out this line if you wish to participate.
-  echo "gclient metrics --opt-out"
-
-  # Now you can start the fetch
-  echo "mkdir v8base"
-  # change into v8base
-  echo "cd v8base"
-  # fetch
-  echo "fetch v8"
-  # checkout main
-  echo "git checkout main"
-  # pull
-  echo "git pull"
-  # use the specified commit hash
-  echo "git reset fce38915e4c7c73c0e7f77bb13e2a78514968d35 --hard"
-  # Use depot tools gclient sync
-  echo "gclient sync -D"
-
-
-
-  # on exit return to the top level of the git repo
-  echo "cd .."
 }
 
 
@@ -210,4 +214,81 @@ zopen_append_to_setup()
 
 
 
+####
+# stuff to keep until we figure this out
 
+
+#  # Ensure path is correct for depot tools installation
+#  echo "desired_path=\"zopen/usr/local/zopen/depot_tools/depot_tools-main\""
+
+#  echo "if  expr \"${PATH}\" : \".*${desired_path}.*\" 1>/dev/null ; then"
+#  echo "  echo \"Good. depot_tools is in path.\""
+#  echo "else"
+#  echo "  echo \"Path to depot_tools missing.  Adding it to path..\""
+#  echo "  export PATH=${PATH}:${HOME}/${desired_path}"
+#  echo "fi"
+
+#  echo "echo \"ensure path is correct\""
+#  echo "echo \"PATH:  ${PATH}\""
+
+#  # update the path for depot_tools
+#  # update the path for pip
+#  echo "export PATH=${PATH}:${HOME}/.local/bin"
+
+#  # update the compiler settings
+#  # TODO: this can probably be moved to v8 build later
+#  echo "export CC=clang"
+#  echo "export CXX=clang++"
+#  echo "export LINK=clang++"
+
+#  # Disable updating depot_tools
+#  echo "export DEPOT_TOOLS_UPDATE=0"
+
+#  # Disable commands:
+#  # * ensure_bootstrap
+#  # * update_depot_tools
+#  echo "export DEPOT_TOOLS_BOOTSTRAP_PYTHON3=0"
+
+
+
+
+#  # Create the virtual env in the v8port install dir
+#  echo "echo \"    Creating a python venv...\""
+#  echo "python3 -m venv venv"
+
+
+#  # depot_tools creates the venv, here we ensure the necessary packages are installed
+#  # Activate the path
+#  echo "echo \"activating the virtual env - venv\""
+#  echo ". ${ZOPEN_PKGINSTALL}/v8/v8-DEV/venv/bin/activate"
+
+#  # Update the virtual env
+#  echo "echo \"updating the virtual env pip\""
+#  echo "python -m pip install -U pip"
+
+#  # Install the necessary requirements
+#  echo "pip install -r ${ZOPEN_PKGINSTALL}/v8/v8-DEV/requirements.txt"
+
+#  # Using depot_tools disable metrics.
+#  # Comment out this line if you wish to participate.
+#  echo "gclient metrics --opt-out"
+
+#  # Now you can start the fetch
+#  echo "mkdir v8base"
+#  # change into v8base
+#  echo "cd v8base"
+#  # fetch
+#  echo "fetch v8"
+#  # checkout main
+#  echo "git checkout main"
+#  # pull
+#  echo "git pull"
+#  # use the specified commit hash
+#  echo "git reset fce38915e4c7c73c0e7f77bb13e2a78514968d35 --hard"
+#  # Use depot tools gclient sync
+#  echo "gclient sync -D"
+
+
+
+#  # on exit return to the top level of the git repo
+#  echo "cd .."
