@@ -314,7 +314,8 @@ This is the workflow for building v8 using the z/OS Open Tools framework.
 
 It will create a venv in `${HOME}/zopen/usr/local/zopen/v8/v8-DEV/venv`.
 The v8port `buildenv` file will setup config the environment to 
-fetch the v8 source code. 
-
+fetch the v8 source code. Afterwards, source this venv via
+`. ${HOME}/zopen/usr/local/zopen/v8/v8-DEV/venv/bin/activate`
+to work on the repo.
 
 
