@@ -163,6 +163,8 @@ zopen_build() {
   git apply ../../../../../patches/third_party/googletest/src/git.20231122.af29db7ec2.diff
 
 
+  # return to v8port/v8base/v8 level
+  cd ../../../..
 
 
 
