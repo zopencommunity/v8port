@@ -299,3 +299,23 @@ $ V=1 ninja -v -j 12 -C out/zos_s390x.release/
 
 
 
+## z/OS Open Tools Workflow 
+
+This is the workflow for building v8 using the z/OS Open Tools framework.
+
+1. install depot_tools 
+    - `$ zopen install depot_tools`
+2. Currently v8port is still in developer form
+    - `$ cd ${HOME}/zopen/dev`
+    - `$ git clone git@github.com:ZOSOpenTools/v8port.git`
+3. Start the build process
+    - `$ cd ${HOME}/zopen/dev/v8port`
+    - `$ rm -rf ~/.local v8base install ${HOME}/zopen/usr/local/zopen/v8 venv log; zopen build`
+
+It will create a venv in `${HOME}/zopen/usr/local/zopen/v8/v8-DEV/venv`.
+The v8port `buildenv` file will setup config the environment to 
+fetch the v8 source code. Afterwards, source this venv via
+`. ${HOME}/zopen/usr/local/zopen/v8/v8-DEV/venv/bin/activate`
+to work on the repo.
+
+

@@ -1,8 +1,27 @@
-export ZOPEN_STABLE_URL="https://chromium.googlesource.com/v8/v8.git"
-export ZOPEN_STABLE_DEPS="depot_tools zoslib cmake make python gn ninja git comp_clang"
-export ZOPEN_DEV_DEPS="depot_tools zoslib cmake make python gn ninja git comp_clang"
-export ZOPEN_BUILD_LINE="DEV"
+# This package does not use a git clone URL.  Instead it uses
+# the depot tools package to peform a fetch.  Fetch, gclient etc
+# are included in the depot tools package toolchain. Consquently,
+# ZOPEN_BUILD_LINE and ZOPEN_DEV_URL are unspecified and 
+# ZOPEN_TYPE is set to BARE.  Also, in this case, do 
+# not use ZOPEN_DEV_DEPS.  Instead use ZOPEN_DEPS.
+# Lastly, specify ZOPEN_NAME.
+#
+# Use zopen build -vv to see if the dependencies are being processed
+export ZOPEN_TYPE="BARE"
+export ZOPEN_NAME="v8"
+export ZOPEN_DEPS="depot_tools zoslib cmake make python gn ninja git comp_clang"
+
+export ZOPEN_RUNTIME_DEPS="zoslib python"
+# Nothing to configure or build:?
+export ZOPEN_CONFIGURE="skip"
+#export ZOPEN_MAKE="skip"
+export ZOPEN_MAKE="zopen_build"
+
+export ZOPEN_INSTALL="zopen_install"
 export ZOPEN_CATEGORIES="development language core"
+
+
+
 
 zopen_check_results()
 {
@@ -23,3 +42,179 @@ zopen_get_version()
   # Rather than hardcoding the version, obtain the version by running the tool/library
   echo "1.0.0"
 }
+
+
+#
+# Hooks/Routines called during `$ zopen build`
+#
+
+# Called First
+zopen_init()
+{
+  echo "### zopen_init ###"
+
+  # Check for python
+  if ! type python3 >/dev/null ; then
+    printError "need python3 venv with packages: httplib2 and six"
+  fi
+
+
+}
+
+# Called Second.
+zopen_build() {
+
+  echo "### zopen_build ###"
+
+  # Ensure path is correct for depot tools installation
+  desired_path="zopen/usr/local/zopen/depot_tools/depot_tools-main"
+
+  if  expr "${PATH}" : ".*${desired_path}.*" 1>/dev/null ; then
+    echo "Good. depot_tools is in path."
+  else
+    echo "Path to depot_tools missing.  Adding it to path.."
+    export PATH=${PATH}:${HOME}/${desired_path}
+  fi
+
+  echo "ensure path is correct"
+  echo "PATH:  ${PATH}"
+
+  # update the path for depot_tools
+  # update the path for pip
+  export PATH=${PATH}:${HOME}/.local/bin
+
+  # update the compiler settings
+  # TODO: this can probably be moved to v8 build later
+  export CC=clang
+  export CXX=clang++
+  export LINK=clang++
+
+  # Disable updating depot_tools
+  export DEPOT_TOOLS_UPDATE=0
+
+  # Disable commands:
+  # * ensure_bootstrap
+  # * update_depot_tools
+  export DEPOT_TOOLS_BOOTSTRAP_PYTHON3=0
+
+
+
+
+  # Create the virtual env in the v8port install dir
+  echo "    Creating a python venv..."
+  python3 -m venv venv
+
+
+  # depot_tools creates the venv, here we ensure the necessary packages are installed
+  # Activate the path
+  echo "activating the virtual env - venv"
+  . venv/bin/activate
+
+  # Update the virtual env
+  echo "updating the virtual env pip"
+  python -m pip install -U pip
+
+  # Install the necessary requirements
+  echo "Installing reqired package in venv"  
+  pip install -r requirements.txt
+
+  # Using depot_tools disable metrics.
+  echo "Invoking gclient metrics --opt-out"
+  # Comment out this line if you wish to participate.
+  gclient metrics --opt-out
+
+  # Now you can start the fetch
+  mkdir v8base
+  # change into v8base
+  cd v8base
+  # fetch
+  echo "fetch v8 ..."
+  fetch v8
+  # change dirs to v8
+  cd v8
+  # checkout main
+  echo "git checkout main"
+  git checkout main
+  # pull
+  echo "git pull"
+  git pull
+  # use the specified commit hash
+  echo "git reset fce38915e4c7c73c0e7f77bb13e2a78514968d35 --hard"
+  git reset fce38915e4c7c73c0e7f77bb13e2a78514968d35 --hard
+  # Use depot tools gclient sync
+  echo "gclient sync -D"
+  gclient sync -D
+
+
+
+  # on exit return to the top level of the git repo
+  cd ../..
+}
+
+
+# Called Third
+zopen_install() {
+  echo "### zopen_install ###"
+  # ZOPEN_INSTALL_DIR: ${HOME}/zopen/usr/local/zopen/v8/v8-DEV
+  # Current directory is top level of the repo since zopen_build has run
+
+  mkdir -p ${ZOPEN_INSTALL_DIR}
+  cp -r * ${ZOPEN_INSTALL_DIR} # modify to copy the relevant scripts
+}
+
+#
+# Hooks/Routines called post install when
+# user `. ${HOME}/zopen/etc/zopen-config`
+# to use the zopen tools.
+#
+
+# zopen_append_env() creates a file with the settings below
+# Its ${HOME}/usr/local/zopen/depot_tools/depot_tools-main/.appenv
+#
+# Called first?
+zopen_append_to_env()
+{
+  echo "### zopen_append_env ###"
+
+  # echo envars outside of PATH, MANPATH, LIBPATH
+
+}
+
+# Notes:
+# zopen_append_to_setup() does:
+#   creates the dir: ${HOME}/zopen/usr/local/zopen/v8
+#   during the `zopen build` process.
+#
+#   during this stage the current working directory is
+#   ${HOME}/zopen/usr/local/zopen/v8
+#
+#   it creates/appends to the file setup.sh in that dir.
+#
+# Example buildenvs which use this portion of
+# code are:
+#
+#   https://github.com/ZOSOpenTools/sudoport/blob/main/buildenv#L49
+#
+#   https://github.com/ZOSOpenTools/gpgport/blob/main/buildenv#L50
+#
+# Build workflow
+#   cd ~/zopen/dev/v8port
+#   rm -rf ~/.local v8base install ${HOME}/zopen/usr/local/zopen/v8 venv logs; zopen build
+#
+
+
+# Called second?
+
+# This captures stdout and puts in setup.sh
+# These need to be echo's
+zopen_append_to_setup()
+{
+  # echo commands that will run when installing via setup.sh
+  # At this time, ZOPEN_INSTAL_DIR is:
+  # ${HOME}/zopen/usr/local/zopen/v8/v8-DEV
+
+  echo "echo \"append_to_setup()\""
+
+}
+
+

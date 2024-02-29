@@ -2,3 +2,5 @@ log/
 log.DEV/
 log.STABLE/
 install/
+v8base/
+venv/
