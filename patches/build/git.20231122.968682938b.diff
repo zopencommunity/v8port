@@ -1,7 +1,16 @@
 diff --git a/config/compiler/BUILD.gn b/config/compiler/BUILD.gn
-index de1cd6efc..341d72163 100644
+index de1cd6efc..fbb4b55b0 100644
 --- a/config/compiler/BUILD.gn
 +++ b/config/compiler/BUILD.gn
+@@ -1577,7 +1577,7 @@ config("compiler_deterministic") {
+ }
+ 
+ config("clang_revision") {
+-  if (is_clang && clang_base_path == default_clang_base_path) {
++  if (is_clang && clang_base_path == default_clang_base_path && current_os != "zos") {
+     update_args = [
+       "--print-revision",
+       "--verify-version=$clang_version",
 @@ -1882,6 +1882,13 @@ config("default_warnings") {
            # TODO(https://crbug.com/1490607): Fix and re-enable.
            "-Wno-thread-safety-reference-return",
