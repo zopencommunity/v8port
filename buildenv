@@ -141,9 +141,28 @@ zopen_build() {
   # use the specified commit hash
   echo "git reset fce38915e4c7c73c0e7f77bb13e2a78514968d35 --hard"
   git reset fce38915e4c7c73c0e7f77bb13e2a78514968d35 --hard
+  # Modify DEPS via sed
+  echo "Modify DEPS via sed"
+  sed -i -f../../patches/DEPS.sed DEPS
   # Use depot tools gclient sync
   echo "gclient sync -D"
   gclient sync -D
+  #
+  # echo apply patches
+  #
+  echo "Apply patch for overall repo"
+  git apply ../../patches/git.20231122.fce38915e4.diff
+  echo "Apply patch for toolchain config"
+  cd build
+  git apply ../../../patches/build/git.20231122.968682938b.diff
+  echo "Apply patch for abseil c++ libaries"
+  cd ../third_party/abseil-cpp
+  git apply ../../../../patches/third_party/abseil-cpp/git.20231122.1e8861f03f.diff
+  echo "Apply patch for googletest"
+  cd ../googletest/src
+  git apply ../../../../../patches/third_party/googletest/src/git.20231122.af29db7ec2.diff
+
+
 
 
 

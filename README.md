@@ -193,14 +193,14 @@ v8port/patches/. Adjust the path to v8port to match your environment. Example:
 This is a large patch which updates multiple portions of the codebase.
 ```
 $ cd $HOME/zopen/dev/v8base/v8
-$ git apply ../../v8port/patches/git.20231122.fce38915e4.diff
+$ git apply ../../patches/git.20231122.fce38915e4.diff
 ```
 
 This is a small patch which updates the toolchain config.
 ```
 $ cd $HOME/zopen/dev/v8base/v8
 $ pushd build
-$ git apply ../../../v8port/patches/build/git.20231122.968682938b.diff
+$ git apply ../../patches/build/git.20231122.968682938b.diff
 $ popd
 ```
 From this point forward, `pushd/popd` is used so that the directory
@@ -209,14 +209,14 @@ is not specifed each time.
 This is a small patch which updates the third-party abseil common c++ libaries.
 ```
 $ pushd third_party/abseil-cpp
-$ git apply ../../../../v8port/patches/third_party/abseil-cpp/git.20231122.1e8861f03f.diff
+$ git apply ../../../../patches/third_party/abseil-cpp/git.20231122.1e8861f03f.diff
 $ popd
 ```
 
 This is a tiny patch which adds a new ZOS platform to google test.
 ```
 $ pushd third_party/googletest/src
-$ git apply ../../../../../v8port/patches/third_party/googletest/src/git.20231122.af29db7ec2.diff
+$ git apply ../../../../../patches/third_party/googletest/src/git.20231122.af29db7ec2.diff
 $ popd
 ```
 
@@ -228,7 +228,7 @@ using the same approach. Example:
 
 ```
 $ cd $HOME/zopen/dev/v8base/v8
-$ pax -p p -rzf ../../v8port/patches/src.zos.20231122.fce38915e4.pax
+$ pax -p p -rzf ../../patches/src.zos.20231122.fce38915e4.pax
 
 $ pushd buildtools
 $ pax -p p -rzf ../../../v8port/patches/buildtools/buildtools.zos.20231122.92b79f4d75.pax
@@ -317,5 +317,18 @@ The v8port `buildenv` file will setup config the environment to
 fetch the v8 source code. Afterwards, source this venv via
 `. ${HOME}/zopen/usr/local/zopen/v8/v8-DEV/venv/bin/activate`
 to work on the repo.
+
+This can be done in a convienece script via
+
+```
+$ . ./setenv.sh
+```
+
+or if you want to preserve the hidden `v8base/.gclient` and `v8base/.gclient_entries`
+
+```
+$ . ./setenv.sh -resume
+```
+
 
 
