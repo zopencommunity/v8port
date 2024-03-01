@@ -308,7 +308,11 @@ This is the workflow for building v8 using the z/OS Open Tools framework.
 2. Currently v8port is still in developer form
     - `$ cd ${HOME}/zopen/dev`
     - `$ git clone git@github.com:ZOSOpenTools/v8port.git`
-3. Start the build process
+3. The build process will use git via ssh.  If you have a passphrase
+   for your ssh key, do the following:
+   - `$ eval \`ssh-agent\``  
+   - `$ ssh-add ${HOME}/.ssh/some_private_ssh_key`
+4. Start the build process
     - `$ cd ${HOME}/zopen/dev/v8port`
     - `$ rm -rf ~/.local v8base install ${HOME}/zopen/usr/local/zopen/v8 venv log; zopen build`
 

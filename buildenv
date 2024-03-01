@@ -173,6 +173,15 @@ zopen_build() {
   echo "Apply pax files to buildtools"
   cd buildtools
   pax -p p -rzf ../../../patches/buildtools/buildtools.zos.20231122.92b79f4d75.pax
+  # return to v8port/v8base/v8 level
+  cd ..
+  #
+  # download and build zoslib from IBMRuntimes
+  #
+  cd third_party
+  git clone git@github.com:ibmruntimes/zoslib
+  ./build.sh -c -r -t
+  # return to v8port/v8base/v8 level
   cd ..
 
 
