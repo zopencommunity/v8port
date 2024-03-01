@@ -148,7 +148,7 @@ zopen_build() {
   echo "gclient sync -D"
   gclient sync -D
   #
-  # echo apply patches
+  # apply patches
   #
   echo "Apply patch for overall repo"
   git apply ../../patches/git.20231122.fce38915e4.diff
@@ -161,10 +161,20 @@ zopen_build() {
   echo "Apply patch for googletest"
   cd ../googletest/src
   git apply ../../../../../patches/third_party/googletest/src/git.20231122.af29db7ec2.diff
-
-
+  # return to v8port/v8base/v8/third_party level
+  cd ../..
   # return to v8port/v8base/v8 level
-  cd ../../../..
+  cd ..
+  #
+  # apply pax files
+  #
+  echo "Apply pax files to overall repo"
+  pax -p p -rzf ../../patches/src.zos.20231122.fce38915e4.pax
+  echo "Apply pax files to buildtools"
+  cd buildtools
+  pax -p p -rzf ../../../patches/buildtools/buildtools.zos.20231122.92b79f4d75.pax
+  cd ..
+
 
 
 
