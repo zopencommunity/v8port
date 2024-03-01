@@ -180,9 +180,10 @@ zopen_build() {
   #
   cd third_party
   git clone git@github.com:ibmruntimes/zoslib
+  cd zoslib
   ./build.sh -c -r -t
   # return to v8port/v8base/v8 level
-  cd ..
+  cd ../..
 
 
 
