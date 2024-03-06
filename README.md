@@ -335,4 +335,15 @@ $ . ./setenv.sh -resume
 ```
 
 
+```
+cd v8base/v8
+git stash
+pushd third_party/abseil-cpp && git stash && popd
+pushd third_party/googletest/src && git stash && popd
+pushd third_party/fuzztest/src && git stash && popd
+pushd third_party/re2/src && git stash && popd
+pushd build && git stash && popd
+sed -i -f../../patches/DEPS.sed DEPS
+```
+
 
