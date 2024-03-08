@@ -65,7 +65,7 @@ zopen_build() {
 
   echo "### zopen_build ###"
   # enable tracing.
-  set -x
+  #set -x
 
   # Ensure path is correct for depot tools installation
   desired_path="zopen/usr/local/zopen/depot_tools/depot_tools-main"
@@ -90,17 +90,20 @@ zopen_build() {
   echo "BEFORE CC: ${CC}"
   echo "BEFORE CXX: ${CXX}"
   echo "BEFORE LINK: ${LINK}"
-  echo "BEFORE CFLAGS=$CFLAGS"
-  echo "BEFORE CXXFLAGS=$CXXFLAGS"
-  unset CFLAGS CXXFLAGS
+  echo "BEFORE LDFLAGS: ${LDFLAGS}"
+  echo "BEFORE CFLAGS: ${CFLAGS}"
+  echo "BEFORE CXXFLAGS: ${CXXFLAGS}"
+  echo "unset c/xxflags and set CC/CXX/LINK"
+  unset CFLAGS CXXFLAGS LDFLAGS
   export CC=clang
   export CXX=clang++
   export LINK=clang++
   echo "CC: ${CC}"
   echo "CXX: ${CXX}"
   echo "LINK: ${LINK}"
-  echo "CFLAGS=$CFLAGS"
-  echo "CXXFLAGS=$CXXFLAGS"
+  echo "LDFLAGS: ${LDFLAGS}"
+  echo "CFLAGS: ${CFLAGS}"
+  echo "CXXFLAGS: ${CXXFLAGS}"
 
   # Disable updating depot_tools
   export DEPOT_TOOLS_UPDATE=0
@@ -159,7 +162,7 @@ zopen_build() {
   sed -i -f../../patches/DEPS.sed DEPS
   # Use depot tools gclient sync
   echo "gclient sync -D"
-  gclient sync -D
+  gclient sync -D -v
   #
   # apply patches
   #
@@ -197,8 +200,21 @@ zopen_build() {
   git clone git@github.com:ibmruntimes/zoslib
   cd zoslib
   ./build.sh -c -r -t
+  #
+  # Prepare v8 for building
+  #
+  export ZOSLIB_LIBPATH=${ZOPEN_ROOT}/v8base/v8/third_party/zoslib/install/lib
+  export PATH=${ZOPEN_ROOT}/v8base/v8/buildtools/zos:$PATH # for the 'ar' wrapper
+  cd buildtools/zos
+  ln -s ${HOME}/zopen/dev/gnport/gn/out/gn .
   # return to v8port/v8base/v8 level
-  cd ../..
+  cd ../../../..
+
+  #
+  # Do the v8 build
+  #
+  gn -v gen out/zos_s390x.release --args="is_debug=false treat_warnings_as_errors=false"
+  V=1 ninja -v -j 12 -C out/zos_s390x.release/
 
 
 
@@ -207,7 +223,7 @@ zopen_build() {
   cd ../..
 
   # disable tracing
-  set +x
+  #set +x
 }
 
 
