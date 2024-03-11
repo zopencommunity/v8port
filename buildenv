@@ -200,15 +200,21 @@ zopen_build() {
   git clone git@github.com:ibmruntimes/zoslib
   cd zoslib
   ./build.sh -c -r -t
+  # return to v8port/v8base/v8 level
+  echo "change dir to v8base/v8 level......"
+  cd ../..
   #
   # Prepare v8 for building
   #
   export ZOSLIB_LIBPATH=${ZOPEN_ROOT}/v8base/v8/third_party/zoslib/install/lib
   export PATH=${ZOPEN_ROOT}/v8base/v8/buildtools/zos:$PATH # for the 'ar' wrapper
   cd buildtools/zos
+  echo "change dir to v8base/v8/buildtools/zos level......"
+  echo "make link to gn in v8base/v8/buildtools/zos"
   ln -s ${HOME}/zopen/dev/gnport/gn/out/gn .
   # return to v8port/v8base/v8 level
-  cd ../../../..
+  echo "change dir to v8base/v8 level......"
+  cd ../..
 
   #
   # Do the v8 build
@@ -217,10 +223,8 @@ zopen_build() {
   V=1 ninja -v -j 12 -C out/zos_s390x.release/
 
 
-
-
   # on exit return to the top level of the git repo
-  cd ../..
+  cd ${ZOPEN_ROOT}
 
   # disable tracing
   #set +x
