@@ -22,7 +22,6 @@ export ZOPEN_CATEGORIES="development language core"
 
 
 
-
 zopen_check_results()
 {
   dir="$1"
@@ -65,6 +64,8 @@ zopen_init()
 zopen_build() {
 
   echo "### zopen_build ###"
+  # enable tracing.
+  #set -x
 
   # Ensure path is correct for depot tools installation
   desired_path="zopen/usr/local/zopen/depot_tools/depot_tools-main"
@@ -85,9 +86,24 @@ zopen_build() {
 
   # update the compiler settings
   # TODO: this can probably be moved to v8 build later
+  # will be set via zopen build
+  #echo "BEFORE CC: ${CC}"
+  #echo "BEFORE CXX: ${CXX}"
+  #echo "BEFORE LINK: ${LINK}"
+  #echo "BEFORE LDFLAGS: ${LDFLAGS}"
+  #echo "BEFORE CFLAGS: ${CFLAGS}"
+  #echo "BEFORE CXXFLAGS: ${CXXFLAGS}"
+  #echo "unset c/xxflags and set CC/CXX/LINK"
+  unset CFLAGS CXXFLAGS LDFLAGS
   export CC=clang
   export CXX=clang++
   export LINK=clang++
+  #echo "CC: ${CC}"
+  #echo "CXX: ${CXX}"
+  #echo "LINK: ${LINK}"
+  #echo "LDFLAGS: ${LDFLAGS}"
+  #echo "CFLAGS: ${CFLAGS}"
+  #echo "CXXFLAGS: ${CXXFLAGS}"
 
   # Disable updating depot_tools
   export DEPOT_TOOLS_UPDATE=0
@@ -135,20 +151,76 @@ zopen_build() {
   # checkout main
   echo "git checkout main"
   git checkout main
-  # pull
-  echo "git pull"
-  git pull
   # use the specified commit hash
   echo "git reset fce38915e4c7c73c0e7f77bb13e2a78514968d35 --hard"
   git reset fce38915e4c7c73c0e7f77bb13e2a78514968d35 --hard
+  # Modify DEPS via sed
+  echo "Modify DEPS via sed"
+  sed -i -f${ZOPEN_ROOT}/patches/DEPS.sed DEPS
   # Use depot tools gclient sync
   echo "gclient sync -D"
-  gclient sync -D
+  gclient sync -D -v
+  #
+  # apply patches
+  #
+  echo "Apply patch for overall repo"
+  git apply ${ZOPEN_ROOT}/patches/git.20231122.fce38915e4.diff
+  echo "Apply patch for toolchain config"
+  cd build
+  git apply ${ZOPEN_ROOT}/patches/build/git.20231122.968682938b.diff
+  echo "Apply patch for abseil c++ libaries"
+  cd ${ZOPEN_ROOT}/v8base/v8/third_party/abseil-cpp
+  git apply ${ZOPEN_ROOT}/patches/third_party/abseil-cpp/git.20231122.1e8861f03f.diff
+  echo "Apply patch for googletest"
+  cd ${ZOPEN_ROOT}/v8base/v8/third_party/googletest/src
+  git apply ${ZOPEN_ROOT}/patches/third_party/googletest/src/git.20231122.af29db7ec2.diff
+  # return to v8port/v8base/v8 level
+  cd ${ZOPEN_ROOT}/v8base/v8
+  #
+  # apply pax files
+  #
+  echo "Apply pax files to overall repo"
+  pax -p p -rzf ${ZOPEN_ROOT}/patches/src.zos.20231122.fce38915e4.pax
+  echo "Apply pax files to buildtools"
+  cd buildtools
+  pax -p p -rzf ${ZOPEN_ROOT}/patches/buildtools/buildtools.zos.20231122.92b79f4d75.pax
+  # return to v8port/v8base/v8 level
+  cd ${ZOPEN_ROOT}/v8base/v8
+  #
+  # download and build zoslib from IBMRuntimes
+  #
+  cd third_party
+  git clone git@github.com:ibmruntimes/zoslib
+  cd zoslib
+  ./build.sh -c -r -t
+  # return to v8port/v8base/v8 level
+  cd ${ZOPEN_ROOT}/v8base/v8
+  #
+  # Prepare v8 for building
+  #
+  export ZOSLIB_LIBPATH=${ZOPEN_ROOT}/v8base/v8/third_party/zoslib/install/lib
+  export PATH=${ZOPEN_ROOT}/v8base/v8/buildtools/zos:$PATH # for the 'ar' wrapper
+  cd buildtools/zos
+  echo "change dir to v8base/v8/buildtools/zos level......"
+  echo "make link to gn in v8base/v8/buildtools/zos"
+  ln -s ${HOME}/zopen/dev/gnport/gn/out/gn .
+  # return to v8port/v8base/v8 level
+  cd ${ZOPEN_ROOT}/v8base/v8
 
+  #
+  # Do the v8 build
+  #
+  echo "Generate ninja files using gn..."
+  gn -v gen out/zos_s390x.release --args="is_debug=false treat_warnings_as_errors=false"
+  echo "Perform build using ninja..."
+  V=1 ninja -v -j 12 -C out/zos_s390x.release/
 
 
   # on exit return to the top level of the git repo
-  cd ../..
+  cd ${ZOPEN_ROOT}
+
+  # disable tracing
+  #set +x
 }
 
 
