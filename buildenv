@@ -85,25 +85,7 @@ zopen_build() {
   export PATH=${PATH}:${HOME}/.local/bin
 
   # update the compiler settings
-  # TODO: this can probably be moved to v8 build later
-  # will be set via zopen build
-  #echo "BEFORE CC: ${CC}"
-  #echo "BEFORE CXX: ${CXX}"
-  #echo "BEFORE LINK: ${LINK}"
-  #echo "BEFORE LDFLAGS: ${LDFLAGS}"
-  #echo "BEFORE CFLAGS: ${CFLAGS}"
-  #echo "BEFORE CXXFLAGS: ${CXXFLAGS}"
-  #echo "unset c/xxflags and set CC/CXX/LINK"
   unset CFLAGS CXXFLAGS LDFLAGS
-  export CC=clang
-  export CXX=clang++
-  export LINK=clang++
-  #echo "CC: ${CC}"
-  #echo "CXX: ${CXX}"
-  #echo "LINK: ${LINK}"
-  #echo "LDFLAGS: ${LDFLAGS}"
-  #echo "CFLAGS: ${CFLAGS}"
-  #echo "CXXFLAGS: ${CXXFLAGS}"
 
   # Disable updating depot_tools
   export DEPOT_TOOLS_UPDATE=0
@@ -112,8 +94,6 @@ zopen_build() {
   # * ensure_bootstrap
   # * update_depot_tools
   export DEPOT_TOOLS_BOOTSTRAP_PYTHON3=0
-
-
 
 
   # Create the virtual env in the v8port install dir
