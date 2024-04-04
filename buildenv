@@ -23,8 +23,7 @@ export ZOPEN_CATEGORIES="development language core"
 #
 # User Tunable Paramters
 #
-#NUM_CPUS=12
-NUM_CPUS=6
+[ -z "${NUM_JOBS}" ] && NUM_JOBS=6
 
 
 
@@ -199,7 +198,7 @@ zopen_build() {
   echo "Generate ninja files using gn..."
   gn -v gen out/zos_s390x.release --args="is_debug=false treat_warnings_as_errors=false"
   echo "Perform build using ninja..."
-  V=1 ninja -v -j ${NUM_CPUS} -C out/zos_s390x.release/
+  V=1 ninja -v -j ${NUM_JOBS} -C out/zos_s390x.release/
 
 
   # on exit return to the top level of the git repo
