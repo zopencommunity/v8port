@@ -24,6 +24,10 @@ export ZOPEN_CATEGORIES="development language core"
 # User Tunable Paramters
 #
 [ -z "${NUM_JOBS}" ] && NUM_JOBS=6
+# Uncomment the following line to build d8 so that it uses a dynamic 
+# library rather than a static build:
+#COMPONENT_BUILD="is_component_build=true"
+[ -z "${COMPONENT_BUILD}" ] && COMPONENT_BUILD=""
 
 
 
@@ -196,7 +200,7 @@ zopen_build() {
   # Do the v8 build
   #
   echo "Generate ninja files using gn..."
-  gn -v gen out/zos_s390x.release --args="is_debug=false treat_warnings_as_errors=false"
+  gn -v gen out/zos_s390x.release --args="is_debug=false treat_warnings_as_errors=false ${COMPONENT_BUILD}"
   echo "Perform build using ninja..."
   V=1 ninja -v -j ${NUM_JOBS} -C out/zos_s390x.release/
 
