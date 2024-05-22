@@ -22,8 +22,6 @@ export ZOPEN_CATEGORIES="development language core"
 
 #
 # User Tunable Paramters
-#
-[ -z "${NUM_JOBS}" ] && NUM_JOBS=6
 # Uncomment the following line to build d8 so that it uses a dynamic 
 # library rather than a static build:
 #COMPONENT_BUILD="is_component_build=true"
@@ -76,22 +74,7 @@ zopen_build() {
   # enable tracing.
   #set -x
 
-  # Ensure path is correct for depot tools installation
-  desired_path="zopen/usr/local/zopen/depot_tools/depot_tools-main"
-
-  if  expr "${PATH}" : ".*${desired_path}.*" 1>/dev/null ; then
-    echo "Good. depot_tools is in path."
-  else
-    echo "Path to depot_tools missing.  Adding it to path.."
-    export PATH=${PATH}:${HOME}/${desired_path}
-  fi
-
-  echo "ensure path is correct"
-  echo "PATH:  ${PATH}"
-
-  # update the path for depot_tools
-  # update the path for pip
-  export PATH=${PATH}:${HOME}/.local/bin
+  export PATH="${DEPOT_TOOLS_HOME}:${GN_HOME}:$PATH"
 
   # update the compiler settings
   unset CFLAGS CXXFLAGS LDFLAGS
@@ -104,11 +87,9 @@ zopen_build() {
   # * update_depot_tools
   export DEPOT_TOOLS_BOOTSTRAP_PYTHON3=0
 
-
   # Create the virtual env in the v8port install dir
   echo "    Creating a python venv..."
   python3 -m venv venv
-
 
   # depot_tools creates the venv, here we ensure the necessary packages are installed
   # Activate the path
@@ -188,11 +169,11 @@ zopen_build() {
   # Prepare v8 for building
   #
   export ZOSLIB_LIBPATH=${ZOPEN_ROOT}/v8base/v8/third_party/zoslib/install/lib
-  export PATH=${ZOPEN_ROOT}/v8base/v8/buildtools/zos:$PATH # for the 'ar' wrapper
+  export PATH="${ZOPEN_ROOT}/v8base/v8/buildtools/zos:$PATH" # for the 'ar' wrapper
   cd buildtools/zos
   echo "change dir to v8base/v8/buildtools/zos level......"
   echo "make link to gn in v8base/v8/buildtools/zos"
-  ln -s ${HOME}/zopen/dev/gnport/gn/out/gn .
+  ln -s "${GN_HOME}/gn" .
   # return to v8port/v8base/v8 level
   cd ${ZOPEN_ROOT}/v8base/v8
 
@@ -202,7 +183,7 @@ zopen_build() {
   echo "Generate ninja files using gn..."
   gn -v gen out/zos_s390x.release --args="is_debug=false treat_warnings_as_errors=false ${COMPONENT_BUILD}"
   echo "Perform build using ninja..."
-  V=1 ninja -v -j ${NUM_JOBS} -C out/zos_s390x.release/
+  V=1 ninja -v -j ${ZOPEN_NUM_JOBS} -C out/zos_s390x.release/
 
 
   # on exit return to the top level of the git repo
