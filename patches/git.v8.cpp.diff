@@ -1,0 +1,70 @@
+diff --git a/test/unittests/base/platform/platform-unittest.cc b/test/unittests/base/platform/platform-unittest.cc
+index c4f88b7cfd2..9671426d43d 100644
+--- a/test/unittests/base/platform/platform-unittest.cc
++++ b/test/unittests/base/platform/platform-unittest.cc
+@@ -25,8 +25,8 @@
+ namespace v8 {
+ namespace base {
+ 
+-#ifdef V8_TARGET_OS_WIN
+-// Alignment is constrained on Windows.
++#if defined(V8_TARGET_OS_WIN) || V8_OS_ZOS
++// Alignment is constrained on Windows and z/OS.
+ constexpr size_t kMaxPageSize = 4096;
+ #elif V8_HOST_ARCH_PPC64
+ #if defined(_AIX)
+@@ -252,11 +252,23 @@ TEST(StackTest, StackVariableInBounds) {
+ 
+ using SetDataReadOnlyTest = ::testing::Test;
+ 
++#if V8_OS_ZOS
++// TODO(gabylb): zos - pending fix to alignas.
++// no_destroy attribute is to prevent destructor processing read-only data;
++// otherwise process receives a SIGKILL.
++[[clang::no_destroy]] struct alignas(kMaxPageSize) TestData {
++  int x;
++  int y;
++} test_data;
++#endif
++
+ TEST_F(SetDataReadOnlyTest, SetDataReadOnly) {
++#if !V8_OS_ZOS
+   static struct alignas(kMaxPageSize) TestData {
+     int x;
+     int y;
+   } test_data;
++#endif
+   static_assert(alignof(TestData) == kMaxPageSize);
+   static_assert(sizeof(TestData) == kMaxPageSize);
+ 
+diff --git a/test/unittests/compiler/turboshaft/loop-unrolling-analyzer-unittest.cc b/test/unittests/compiler/turboshaft/loop-unrolling-analyzer-unittest.cc
+index 39fbc7e9a4c..40be4a96dff 100644
+--- a/test/unittests/compiler/turboshaft/loop-unrolling-analyzer-unittest.cc
++++ b/test/unittests/compiler/turboshaft/loop-unrolling-analyzer-unittest.cc
+@@ -295,7 +295,7 @@ using LoopUnrollingAnalyzerSmallLoopTest =
+ TEST_P(LoopUnrollingAnalyzerSmallLoopTest, ExactLoopIterCount) {
+   BoundedLoop params = GetParam();
+   auto test = CreateFromGraph(1, [&params](auto& Asm) {
+-    using AssemblerT = std::remove_reference<decltype(Asm)>::type::Assembler;
++    using AssemblerT = typename std::remove_reference<decltype(Asm)>::type::Assembler;
+     OpIndex cond = Asm.GetParameter(0);
+ 
+     ScopedVariable<Word32, AssemblerT> index(&Asm, params.init);
+@@ -334,7 +334,7 @@ using LoopUnrollingAnalyzerLargeLoopTest =
+ TEST_P(LoopUnrollingAnalyzerLargeLoopTest, LargeLoopIterCount) {
+   BoundedLoop params = GetParam();
+   auto test = CreateFromGraph(1, [&params](auto& Asm) {
+-    using AssemblerT = std::remove_reference<decltype(Asm)>::type::Assembler;
++    using AssemblerT = typename std::remove_reference<decltype(Asm)>::type::Assembler;
+     OpIndex cond = Asm.GetParameter(0);
+ 
+     ScopedVariable<Word32, AssemblerT> index(&Asm, params.init);
+@@ -386,7 +386,7 @@ using LoopUnrollingAnalyzerOverflowTest =
+ TEST_P(LoopUnrollingAnalyzerOverflowTest, LargeLoopIterCount) {
+   BoundedLoop params = GetParam();
+   auto test = CreateFromGraph(1, [&params](auto& Asm) {
+-    using AssemblerT = std::remove_reference<decltype(Asm)>::type::Assembler;
++    using AssemblerT = typename std::remove_reference<decltype(Asm)>::type::Assembler;
+     OpIndex cond = Asm.GetParameter(0);
+ 
+     ScopedVariable<Word32, AssemblerT> index(&Asm, params.init);

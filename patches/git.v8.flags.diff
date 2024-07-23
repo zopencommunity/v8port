@@ -1,0 +1,213 @@
+diff --git a/tools/testrunner/objects/testcase.py b/tools/testrunner/objects/testcase.py
+index 4e246da5249..82ed78fa48d 100644
+--- a/tools/testrunner/objects/testcase.py
++++ b/tools/testrunner/objects/testcase.py
+@@ -350,10 +350,10 @@ class TestCase(object):
+ 
+   def _get_cmd_params(self):
+     """Gets all command parameters and combines them in the following order:
+-      - files [empty by default]
+       - all flags
++      - files [empty by default]
+     """
+-    return (self._get_files_params() + self.get_flags())
++    return (self.get_flags() + self._get_files_params())
+ 
+   def get_flags(self):
+     """Gets all flags and combines them in the following order:
+@@ -461,11 +461,16 @@ class TestCase(object):
+         log_process_stats=self.test_config.log_process_stats,
+     )
+ 
+-  def _parse_source_flags(self, source=None):
++  def _parse_source_flags(self, source=None, platform=None):
+     source = source or self.get_source()
+     flags = []
+-    for match in re.findall(FLAGS_PATTERN, source):
+-      flags += shlex.split(match.strip())
++    if platform is not None:
++      for match in re.findall(re.compile(r'//\s+Flags\(' +
++                   re.escape(platform) + r'\):(.*)'), source):
++        flags += shlex.split(match.strip())
++    if not flags:
++      for match in re.findall(FLAGS_PATTERN, source):
++        flags += shlex.split(match.strip())
+     return flags
+ 
+   def is_source_available(self):
+diff --git a/test/mjsunit/testcfg.py b/test/mjsunit/testcfg.py
+index aadb4fc2c58..84a7a85701f 100644
+--- a/test/mjsunit/testcfg.py
++++ b/test/mjsunit/testcfg.py
+@@ -32,6 +32,7 @@ import re
+ 
+ from testrunner.local import statusfile
+ from testrunner.local import testsuite
++from testrunner.local import utils
+ from testrunner.objects import testcase
+ from testrunner.outproc import base as outproc
+ 
+@@ -109,7 +110,7 @@ class TestCase(testcase.D8TestCase):
+       mjsunit_files.append(self.suite.root / "mjsunit_numfuzz.js")
+ 
+     self._source_files = files
+-    self._source_flags = self._parse_source_flags(source)
++    self._source_flags = self._parse_source_flags(source, platform=utils.GuessOS())
+     self._mjsunit_files = mjsunit_files
+     self._files_suffix = [testfilename]
+     self._env = self._parse_source_env(source)
+diff --git a/test/webkit/testcfg.py b/test/webkit/testcfg.py
+index d690719939f..f0a25a72cda 100644
+--- a/test/webkit/testcfg.py
++++ b/test/webkit/testcfg.py
+@@ -29,6 +29,7 @@ import os
+ import re
+ 
+ from testrunner.local import testsuite
++from testrunner.local import utils
+ from testrunner.objects import testcase
+ from testrunner.outproc import webkit
+ 
+@@ -56,7 +57,7 @@ class TestCase(testcase.D8TestCase):
+ 
+     source = self.get_source()
+     self._source_files = self._parse_source_files(source)
+-    self._source_flags = self._parse_source_flags(source)
++    self._source_flags = self._parse_source_flags(source, platform=utils.GuessOS())
+ 
+   def _parse_source_files(self, source):
+     files_list = []  # List of file names to append to command arguments.
+diff --git a/test/debugger/testcfg.py b/test/debugger/testcfg.py
+index 864b860d9a9..cdbb2558473 100644
+--- a/test/debugger/testcfg.py
++++ b/test/debugger/testcfg.py
+@@ -6,6 +6,7 @@ import os
+ import re
+ 
+ from testrunner.local import testsuite
++from testrunner.local import utils
+ from testrunner.objects import testcase
+ 
+ FILES_PATTERN = re.compile(r"//\s+Files:(.*)")
+@@ -31,7 +32,7 @@ class TestCase(testcase.D8TestCase):
+ 
+     source = self.get_source()
+     self._source_files = self._parse_source_files(source)
+-    self._source_flags = self._parse_source_flags(source)
++    self._source_flags = self._parse_source_flags(source, platform=utils.GuessOS())
+ 
+   def _parse_source_files(self, source):
+     files_list = []  # List of file names to append to command arguments.
+diff --git a/test/debugging/testcfg.py b/test/debugging/testcfg.py
+index 5a4c151253d..44712846215 100644
+--- a/test/debugging/testcfg.py
++++ b/test/debugging/testcfg.py
+@@ -42,7 +42,7 @@ class TestCase(PYTestCase):
+ 
+     source = self.get_source()
+     self._source_files = self._parse_source_files(source)
+-    self._source_flags = self._parse_source_flags(source)
++    self._source_flags = self._parse_source_flags(source, platform=utils.GuessOS())
+ 
+   def _parse_source_files(self, source):
+     files = []
+diff --git a/test/inspector/testcfg.py b/test/inspector/testcfg.py
+index 6dd8717d216..1be6014b574 100644
+--- a/test/inspector/testcfg.py
++++ b/test/inspector/testcfg.py
+@@ -38,7 +38,7 @@ class TestCase(testcase.TestCase):
+   def __init__(self, *args, **kwargs):
+     super(TestCase, self).__init__(*args, **kwargs)
+ 
+-    self._source_flags = self._parse_source_flags()
++    self._source_flags = self._parse_source_flags(platform=utils.GuessOS())
+ 
+   def _get_files_params(self):
+     return [
+diff --git a/test/intl/testcfg.py b/test/intl/testcfg.py
+index b0b9b87cfd9..30da5803bb8 100644
+--- a/test/intl/testcfg.py
++++ b/test/intl/testcfg.py
+@@ -29,6 +29,7 @@ import os
+ import re
+ 
+ from testrunner.local import testsuite
++from testrunner.local import utils
+ from testrunner.objects import testcase
+ 
+ ENV_PATTERN = re.compile(r"//\s+Environment Variables:(.*)")
+@@ -52,7 +53,7 @@ class TestCase(testcase.D8TestCase):
+   def __init__(self, *args, **kwargs):
+     super(TestCase, self).__init__(*args, **kwargs)
+ 
+-    self._source_flags = self._parse_source_flags()
++    self._source_flags = self._parse_source_flags(platform=utils.GuessOS())
+     source = self.get_source()
+     self._env = self._parse_source_env(source)
+ 
+diff --git a/test/message/testcfg.py b/test/message/testcfg.py
+index 670994c6cf9..0460147aa77 100644
+--- a/test/message/testcfg.py
++++ b/test/message/testcfg.py
+@@ -51,7 +51,8 @@ class TestCase(testcase.D8TestCase):
+ 
+     source = self.get_source()
+     self._source_files = self._parse_source_files(source)
+-    self._source_flags = self._parse_source_flags(source)
++    self._source_flags = self._parse_source_flags(source,
++                                                  platform=utils.GuessOS())
+ 
+   def _parse_source_files(self, source):
+     return [self._get_source_path()]
+diff --git a/test/debugger/debug/regress/regress-662674.js b/test/debugger/debug/regress/regress-662674.js
+index 46054a5cd97..e059a8d8e75 100644
+--- a/test/debugger/debug/regress/regress-662674.js
++++ b/test/debugger/debug/regress/regress-662674.js
+@@ -3,6 +3,7 @@
+ // found in the LICENSE file.
+ 
+ // Flags: --stack-size=100
++// Flags(zos): --stack-size=220
+ 
+ Debug = debug.Debug
+ 
+diff --git a/test/mjsunit/harmony/regexp-duplicate-named-groups.js b/test/mjsunit/harmony/regexp-duplicate-named-groups.js
+index 6373db92a80..4ee90b9a972 100644
+--- a/test/mjsunit/harmony/regexp-duplicate-named-groups.js
++++ b/test/mjsunit/harmony/regexp-duplicate-named-groups.js
+@@ -3,6 +3,7 @@
+ // found in the LICENSE file.
+ 
+ // Flags: --js-regexp-duplicate-named-groups
++// Flags(zos): --js-regexp-duplicate-named-groups --stack-size=2400
+ 
+ // Duplicate names are only valid in alterations. Test that previous behaviour
+ // is still correct (early syntax error).
+diff --git a/test/mjsunit/regress/regress-1067270.js b/test/mjsunit/regress/regress-1067270.js
+index eb505e5b2bf..602b1e42ece 100644
+--- a/test/mjsunit/regress/regress-1067270.js
++++ b/test/mjsunit/regress/regress-1067270.js
+@@ -3,6 +3,7 @@
+ // found in the LICENSE file.
+ //
+ // Flags: --allow-natives-syntax --stack-size=1200
++// Flags(zos): --allow-natives-syntax --stack-size=3200
+ 
+ const needle = Array(1802).join(" +") + Array(16884).join("A");
+ const string = "A";
+diff --git a/test/mjsunit/regress/wasm/regress-1010272.js b/test/mjsunit/regress/wasm/regress-1010272.js
+index 0d6259c5c79..9ac44206e58 100644
+--- a/test/mjsunit/regress/wasm/regress-1010272.js
++++ b/test/mjsunit/regress/wasm/regress-1010272.js
+@@ -2,9 +2,9 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+-// Flags: --wasm-grow-shared-memory
++// Flags: --wasm-grow-shared-memory -e kNumWorkers=100
++// Flags(zos): --wasm-grow-shared-memory -e kNumWorkers=15
+ 
+-const kNumWorkers = 100;
+ const kNumMessages = 50;
+ 
+ function AllocMemory(initial, maximum = initial) {

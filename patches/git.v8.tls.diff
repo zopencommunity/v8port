@@ -1,0 +1,699 @@
+diff --git a/src/base/contextual.h b/src/base/contextual.h
+index 22db9203c01..8f02eb68f0a 100644
+--- a/src/base/contextual.h
++++ b/src/base/contextual.h
+@@ -11,6 +11,13 @@
+ #include "src/base/macros.h"
+ #include "src/base/platform/platform.h"
+ 
++#if V8_OS_ZOS
++// TODO(gabylb): zos - undo when thread_local is supported.
++class V8_NODISCARD Scope;
++#define top_ (*__top_impl.access())
++#define default_value_ (*__default_value_impl_.access())
++#endif
++
+ namespace v8::base {
+ 
+ // {ContextualVariable} provides a clean alternative to a global variable.
+@@ -69,7 +76,13 @@ class V8_EXPORT_PRIVATE ContextualVariable {
+   static bool HasScope() { return Top() != nullptr; }
+ 
+  private:
++#if V8_OS_ZOS
++  // TODO(gabylb): zos - undo when thread_local is supported.
++  [[clang::no_destroy]]
++  inline static __tlssim<Scope*> __top_impl{nullptr};
++#else
+   inline static thread_local Scope* top_ = nullptr;
++#endif
+ 
+ #if defined(USING_V8_SHARED)
+   // Hide the access to `top_` from other DLLs/libraries, since access to
+@@ -118,7 +131,11 @@ class V8_EXPORT_PRIVATE ContextualVariableWithDefault
+ 
+  private:
+   using Base = ContextualVariable<Derived, VarType>;
++#if V8_OS_ZOS
++  inline static __tlssim<VarType> __default_value_impl_{default_args...};
++#else
+   inline static thread_local VarType default_value_{default_args...};
++#endif
+ };
+ 
+ // Usage: DECLARE_CONTEXTUAL_VARIABLE_WITH_DEFAULT(VarName, VarType, Args...)
+diff --git a/src/base/platform/mutex.cc b/src/base/platform/mutex.cc
+index c1f15cb2c70..78ee5ad2cbb 100644
+--- a/src/base/platform/mutex.cc
++++ b/src/base/platform/mutex.cc
+@@ -27,9 +27,21 @@ namespace {
+ // thread. If this thread has only one held shared mutex (common case), we use
+ // {single_held_shared_mutex}. If it has more than one we allocate a set for it.
+ // Said set has to manually be constructed and destroyed.
+-thread_local base::SharedMutex* single_held_shared_mutex = nullptr;
++
+ using TSet = std::unordered_set<base::SharedMutex*>;
++#if V8_OS_ZOS
++// TODO(gabylb): zos - undo when thread_local is supported.
++[[clang::no_destroy]]
++__tlssim<base::SharedMutex*> __single_held_shared_mutex_impl(nullptr);
++#define single_held_shared_mutex (*__single_held_shared_mutex_impl.access())
++
++[[clang::no_destroy]]
++__tlssim<TSet*> __held_shared_mutexes_impl(nullptr);
++#define held_shared_mutexes (*__held_shared_mutexes_impl.access())
++#else
++thread_local base::SharedMutex* single_held_shared_mutex = nullptr;
+ thread_local TSet* held_shared_mutexes = nullptr;
++#endif
+ 
+ // Returns true iff {shared_mutex} is not a held mutex.
+ bool SharedMutexNotHeld(SharedMutex* shared_mutex) {
+diff --git a/src/base/platform/platform.cc b/src/base/platform/platform.cc
+index 328e9d890d6..c075c32d67c 100644
+--- a/src/base/platform/platform.cc
++++ b/src/base/platform/platform.cc
+@@ -10,8 +10,14 @@ namespace base {
+ namespace {
+ 
+ // A pointer to current thread's stack beginning.
++#if V8_OS_ZOS
++// TODO(gabylb): zos - undo when thread_local is supported.
++[[clang::no_destroy]]
++__tlssim<void*> __thread_stack_start_impl(nullptr);
++#define thread_stack_start (*__thread_stack_start_impl.access())
++#else
+ thread_local void* thread_stack_start = nullptr;
+-
++#endif
+ }  // namespace
+ 
+ // static
+diff --git a/src/codegen/assembler.cc b/src/codegen/assembler.cc
+index 0e4c913b0c6..7c2db3a91de 100644
+--- a/src/codegen/assembler.cc
++++ b/src/codegen/assembler.cc
+@@ -132,11 +132,24 @@ class ExternalAssemblerBufferImpl : public AssemblerBuffer {
+   const int size_;
+ };
+ 
++#if V8_OS_ZOS
++// TODO(gabylb): zos - undo when thread_local is supported.
++[[clang::no_destroy]]
++static __tlssim<std::aligned_storage_t<sizeof(ExternalAssemblerBufferImpl),
++                                       alignof(ExternalAssemblerBufferImpl)>>
++                                       __x_impl;
++#define tls_singleton_storage (*__x_impl.access())
++
++[[clang::no_destroy]]
++static __tlssim<bool> __tls_singleton_taken_impl{false};
++#define tls_singleton_taken (*__tls_singleton_taken_impl.access())
++#else
+ static thread_local std::aligned_storage_t<sizeof(ExternalAssemblerBufferImpl),
+                                            alignof(ExternalAssemblerBufferImpl)>
+     tls_singleton_storage;
+ 
+ static thread_local bool tls_singleton_taken{false};
++#endif
+ 
+ void* ExternalAssemblerBufferImpl::operator new(std::size_t count) {
+   DCHECK_EQ(count, sizeof(ExternalAssemblerBufferImpl));
+diff --git a/src/common/assert-scope.cc b/src/common/assert-scope.cc
+index 2d9666a1c64..edecac2f115 100644
+--- a/src/common/assert-scope.cc
++++ b/src/common/assert-scope.cc
+@@ -24,7 +24,14 @@ constexpr PerThreadAsserts kClearedValue = PerThreadAsserts{};
+ static_assert(!kClearedValue.contains(ASSERT_TYPE_IS_VALID_MARKER));
+ 
+ // Thread-local storage for assert data.
+-thread_local PerThreadAsserts current_per_thread_assert_data(kInitialValue);
++#if V8_OS_ZOS
++// TODO(gabylb): zos - undo when thread_local is supported.
++[[clang::no_destroy]]
++__tlssim<PerThreadAsserts> __current_per_thread_ad_impl(kInitialValue);
++#define current_per_thread_assert_data (*__current_per_thread_ad_impl.access())
++#else
++ thread_local PerThreadAsserts current_per_thread_assert_data(kInitialValue);
++#endif
+ 
+ }  // namespace
+ 
+diff --git a/src/common/ptr-compr.h b/src/common/ptr-compr.h
+index 9f9b92d50cc..32d35891c0d 100644
+--- a/src/common/ptr-compr.h
++++ b/src/common/ptr-compr.h
+@@ -65,6 +65,10 @@ class MainCage : public AllStatic {
+ 
+ #ifdef V8_COMPRESS_POINTERS_IN_SHARED_CAGE
+   static V8_EXPORT_PRIVATE uintptr_t base_ V8_CONSTINIT;
++#elif V8_OS_ZOS
++  [[clang::no_destroy]]
++  static __tlssim<uintptr_t> __base_impl;
++  #define base_ (*__base_impl.access())
+ #else
+   static thread_local uintptr_t base_ V8_CONSTINIT;
+ #endif  // V8_COMPRESS_POINTERS_IN_SHARED_CAGE
+@@ -159,6 +163,10 @@ class ExternalCodeCompressionScheme {
+ 
+ #ifdef V8_COMPRESS_POINTERS_IN_SHARED_CAGE
+   static V8_EXPORT_PRIVATE uintptr_t base_ V8_CONSTINIT;
++#elif V8_OS_ZOS
++  [[clang::no_destroy]]
++  static __tlssim<uintptr_t> __base_impl;
++  #define base_ (*__base_impl.access())
+ #else
+   static thread_local uintptr_t base_ V8_CONSTINIT;
+ #endif  // V8_COMPRESS_POINTERS_IN_SHARED_CAGE
+diff --git a/src/compiler/js-heap-broker.cc b/src/compiler/js-heap-broker.cc
+index 52ed543c19c..46ffa5ea05d 100644
+--- a/src/compiler/js-heap-broker.cc
++++ b/src/compiler/js-heap-broker.cc
+@@ -63,7 +63,14 @@ std::string JSHeapBroker::Trace() const {
+ }
+ 
+ #ifdef DEBUG
++#if V8_OS_ZOS
++// TODO(gabylb): zos - undo when thread_local is supported.
++[[clang::no_destroy]]
++static __tlssim<JSHeapBroker*> __current_broker_impl(nullptr);
++#define current_broker (*__current_broker_impl.access())
++#else
+ static thread_local JSHeapBroker* current_broker = nullptr;
++#endif
+ 
+ CurrentHeapBrokerScope::CurrentHeapBrokerScope(JSHeapBroker* broker)
+     : prev_broker_(current_broker) {
+diff --git a/src/d8/d8-test.cc b/src/d8/d8-test.cc
+index 9378dd49e61..07dfaabba41 100644
+--- a/src/d8/d8-test.cc
++++ b/src/d8/d8-test.cc
+@@ -1393,7 +1393,14 @@ class FastCApiObject {
+ 
+ // The object is statically initialized for simplicity, typically the embedder
+ // will take care of managing their C++ objects lifetime.
++#ifdef __MVS__
++// TODO(gabylb): zos - undo when thread_local is supported.
++[[clang::no_destroy]]
++__tlssim<FastCApiObject> __kFastCApiObject_impl;
++#define kFastCApiObject (*__kFastCApiObject_impl.access())
++#else
+ thread_local FastCApiObject kFastCApiObject;
++#endif
+ }  // namespace
+ 
+ // static
+diff --git a/src/execution/thread-id.cc b/src/execution/thread-id.cc
+index ec4e95ad5d8..66d8e218da4 100644
+--- a/src/execution/thread-id.cc
++++ b/src/execution/thread-id.cc
+@@ -11,7 +11,14 @@ namespace internal {
+ 
+ namespace {
+ 
++#if V8_OS_ZOS
++// TODO(gabylb): zos - undo when thread_local is supported.
++[[clang::no_destroy]]
++__tlssim<int> __thread_id_impl(0);
++#define thread_id (*__thread_id_impl.access())
++#else
+ thread_local int thread_id = 0;
++#endif
+ 
+ std::atomic<int> next_thread_id{1};
+ 
+diff --git a/src/heap/heap-verifier.cc b/src/heap/heap-verifier.cc
+index 8f448ffae67..a6a94e9650e 100644
+--- a/src/heap/heap-verifier.cc
++++ b/src/heap/heap-verifier.cc
+@@ -39,8 +39,21 @@ namespace v8 {
+ namespace internal {
+ 
+ namespace {
++#if V8_OS_ZOS
++// TODO(gabylb): zos - this is enabled only in a debug build
++// and fails to compile:
++#if 0
++[[clang::no_destroy]]
++__tlssim<HeapObject> __pending_layout_change_object_impl(Tagged<HeapObject>());
++#define pending_layout_change_object (*__pending_layout_change_object_impl.access())
++#else
++Tagged<HeapObject> pending_layout_change_object =
++    Tagged<HeapObject>();
++#endif
++#else
+ thread_local Tagged<HeapObject> pending_layout_change_object =
+     Tagged<HeapObject>();
++#endif
+ }  // namespace
+ 
+ // Verify that all objects are Smis.
+diff --git a/src/heap/heap-write-barrier.cc b/src/heap/heap-write-barrier.cc
+index 63c607ba4bf..10c52a94d33 100644
+--- a/src/heap/heap-write-barrier.cc
++++ b/src/heap/heap-write-barrier.cc
+@@ -19,7 +19,14 @@ namespace v8 {
+ namespace internal {
+ 
+ namespace {
++#if V8_OS_ZOS
++// TODO(gabylb): zos - undo when thread_local is supported.
++[[clang::no_destroy]]
++__tlssim<MarkingBarrier*> __current_marking_barrier_impl(nullptr);
++#define current_marking_barrier (*__current_marking_barrier_impl.access())
++#else
+ thread_local MarkingBarrier* current_marking_barrier = nullptr;
++#endif
+ }  // namespace
+ 
+ bool HeapObjectInYoungGenerationSticky(MemoryChunk* chunk,
+diff --git a/src/heap/heap.cc b/src/heap/heap.cc
+index 75a24c57560..2523230bfcf 100644
+--- a/src/heap/heap.cc
++++ b/src/heap/heap.cc
+@@ -4010,7 +4010,13 @@ void Heap::InvokeIncrementalMarkingEpilogueCallbacks() {
+ }
+ 
+ namespace {
++#if V8_OS_ZOS
++[[clang::no_destroy]]
++__tlssim<Address> __pending_layout_change_object_address_impl(kNullAddress);
++#define pending_layout_change_object_address (*__pending_layout_change_object_address_impl.access())
++#else
+ thread_local Address pending_layout_change_object_address = kNullAddress;
++#endif
+ 
+ #ifdef V8_ENABLE_SANDBOX
+ class ExternalPointerSlotInvalidator : public ObjectVisitor {
+diff --git a/src/heap/local-heap.cc b/src/heap/local-heap.cc
+index daeb617ee48..756ba683a4d 100644
+--- a/src/heap/local-heap.cc
++++ b/src/heap/local-heap.cc
+@@ -29,7 +29,13 @@ namespace v8 {
+ namespace internal {
+ 
+ namespace {
++#if V8_OS_ZOS
++[[clang::no_destroy]]
++__tlssim<LocalHeap*> __current_local_heap_impl(nullptr);
++#define current_local_heap (*__current_local_heap_impl.access())
++#else
+ thread_local LocalHeap* current_local_heap = nullptr;
++#endif
+ }  // namespace
+ 
+ LocalHeap* LocalHeap::Current() { return current_local_heap; }
+diff --git a/src/logging/counters.cc b/src/logging/counters.cc
+index 856f38bb4e5..d1e8bffd179 100644
+--- a/src/logging/counters.cc
++++ b/src/logging/counters.cc
+@@ -94,8 +94,14 @@ bool TimedHistogram::ToggleRunningState(bool expect_to_run) const {
+ #pragma clang diagnostic push
+ #pragma clang diagnostic ignored "-Wexit-time-destructors"
+ #endif
++#if V8_OS_ZOS
++  static __tlssim<std::unordered_map<const TimedHistogram*, bool>>
++    __active_timer_impl;
++  #define active_timer (*__active_timer_impl.access())
++#else
+   static thread_local std::unordered_map<const TimedHistogram*, bool>
+       active_timer;
++#endif
+ #if __clang__
+ #pragma clang diagnostic pop
+ #endif
+diff --git a/src/trap-handler/handler-shared.cc b/src/trap-handler/handler-shared.cc
+index 9f50b661511..8bd7c03ae9c 100644
+--- a/src/trap-handler/handler-shared.cc
++++ b/src/trap-handler/handler-shared.cc
+@@ -26,7 +26,14 @@ namespace trap_handler {
+ // We declare this as int rather than bool as a workaround for a glibc bug, in
+ // which the dynamic loader cannot handle executables whose TLS area is only
+ // 1 byte in size; see https://sourceware.org/bugzilla/show_bug.cgi?id=14898.
++#if V8_OS_ZOS
++// TODO(gabylb): zos - undo when thread_local is supported.
++[[clang::no_destroy]]
++__tlssim<int> __g_thread_in_wasm_code_impl(0);
++#define g_thread_in_wasm_code (*__g_thread_in_wasm_code_impl.access())
++#else
+ thread_local int g_thread_in_wasm_code;
++#endif
+ 
+ static_assert(sizeof(g_thread_in_wasm_code) > 1,
+               "sizeof(thread_local_var) must be > 1, see "
+diff --git a/src/trap-handler/trap-handler.h b/src/trap-handler/trap-handler.h
+index cab7f8071ab..a394bc59201 100644
+--- a/src/trap-handler/trap-handler.h
++++ b/src/trap-handler/trap-handler.h
+@@ -157,6 +157,10 @@ inline bool IsTrapHandlerEnabled() {
+ // `thread_local` does not link on AIX:
+ // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=100641
+ extern __thread int g_thread_in_wasm_code;
++#elif V8_OS_ZOS
++// TODO(gabylb): zos - undo when thread_local is supported.
++extern __tlssim<int> __g_thread_in_wasm_code_impl;
++#define g_thread_in_wasm_code (*__g_thread_in_wasm_code_impl.access())
+ #else
+ extern thread_local int g_thread_in_wasm_code;
+ #endif
+diff --git a/src/wasm/wasm-code-manager.cc b/src/wasm/wasm-code-manager.cc
+index 3a0780dac4c..34ef64ceea7 100644
+--- a/src/wasm/wasm-code-manager.cc
++++ b/src/wasm/wasm-code-manager.cc
+@@ -2690,7 +2690,14 @@ void WasmCodeManager::FlushCodeLookupCache(Isolate* isolate) {
+ }
+ 
+ namespace {
++#if V8_OS_ZOS
++// TODO(itodorov): zos - undo when thread_local is supported.
++[[clang::no_destroy]]
++__tlssim<WasmCodeRefScope*> __current_code_refs_scope_impl(nullptr);
++#define current_code_refs_scope (*__current_code_refs_scope_impl.access())
++#else
+ thread_local WasmCodeRefScope* current_code_refs_scope = nullptr;
++#endif
+ }  // namespace
+ 
+ WasmCodeRefScope::WasmCodeRefScope()
+diff --git a/test/unittests/api/isolate-unittest.cc b/test/unittests/api/isolate-unittest.cc
+index a5691b95db5..302b6882a23 100644
+--- a/test/unittests/api/isolate-unittest.cc
++++ b/test/unittests/api/isolate-unittest.cc
+@@ -134,7 +134,14 @@ TEST_F(IncumbentContextTest, Basic) {
+ }
+ 
+ namespace {
++#if V8_OS_ZOS
++// TODO(gabylb): zos - undo when thread_local is supported.
++[[clang::no_destroy]]
++__tlssim<std::map<v8::CrashKeyId, std::string>> __crash_keys_impl;
++#define crash_keys (*__crash_keys_impl.access())
++#else
+ thread_local std::multimap<v8::CrashKeyId, std::string> crash_keys;
++#endif
+ void CrashKeyCallback(v8::CrashKeyId id, const std::string& value) {
+   crash_keys.insert({id, value});
+ }
+diff --git a/src/api/api.cc b/src/api/api.cc
+index f8d3c5aa123..740a80d392c 100644
+--- a/src/api/api.cc
++++ b/src/api/api.cc
+@@ -180,6 +180,13 @@
+ // Has to be the last include (doesn't have include guards):
+ #include "src/api/api-macros.h"
+ 
++// TODO(gabylb): zos - conflicts with top_ from contextual.h;
++// undo when thread_local is supported.
++#ifdef V8_OS_ZOS
++class V8_NODISCARD Scope;
++#define top_ (*__top_impl.access())
++#endif
++
+ namespace v8 {
+ 
+ static OOMErrorCallback g_oom_error_callback = nullptr;
+diff --git a/include/v8-platform.h b/include/v8-platform.h
+index 56bfd727482..ad99d256ece 100644
+--- a/include/v8-platform.h
++++ b/include/v8-platform.h
+@@ -16,6 +16,12 @@
+ #include "v8-source-location.h"  // NOLINT(build/include_directory)
+ #include "v8config.h"  // NOLINT(build/include_directory)
+ 
++#if V8_OS_ZOS
++// TODO(gabylb): zos - this conflicts with base_ def'n in ptr-compr.h
++// thread_local workaroud.
++#undef base_
++#endif
++
+ namespace v8 {
+ 
+ class Isolate;
+diff --git a/src/compiler/memory-lowering.h b/src/compiler/memory-lowering.h
+index 71d74cfd080..b0690340c9f 100644
+--- a/src/compiler/memory-lowering.h
++++ b/src/compiler/memory-lowering.h
+@@ -8,6 +8,12 @@
+ #include "src/compiler/graph-assembler.h"
+ #include "src/compiler/graph-reducer.h"
+ 
++// TODO(gabylb): zos - conflicts with top_ from contextual.h;
++// undo when thread_local is supported.
++#ifdef V8_OS_ZOS
++#undef top_
++#endif
++
+ namespace v8 {
+ namespace internal {
+ namespace compiler {
+diff --git a/src/compiler/node-matchers.h b/src/compiler/node-matchers.h
+index cfe4c87d107..590638da722 100644
+--- a/src/compiler/node-matchers.h
++++ b/src/compiler/node-matchers.h
+@@ -20,6 +20,12 @@
+ #include "src/compiler/operator.h"
+ #include "src/objects/heap-object.h"
+ 
++#if V8_OS_ZOS
++// TODO(gabylb): zos - This conflicts with base_ def'n in ptr-compr.h
++// thread_local workaroud.
++#undef base_
++#endif
++
+ namespace v8::internal::compiler {
+ 
+ class JSHeapBroker;
+diff --git a/src/compiler/turboshaft/memory-optimization-reducer.h b/src/compiler/turboshaft/memory-optimization-reducer.h
+index 949e535e3d5..06df50262c1 100644
+--- a/src/compiler/turboshaft/memory-optimization-reducer.h
++++ b/src/compiler/turboshaft/memory-optimization-reducer.h
+@@ -17,6 +17,12 @@
+ #include "src/compiler/write-barrier-kind.h"
+ #include "src/zone/zone-containers.h"
+ 
++// TODO(gabylb): zos - conflicts with top_ from contextual.h;
++// undo when thread_local is supported.
++#ifdef V8_OS_ZOS
++#undef top_
++#endif
++
+ namespace v8::internal::compiler::turboshaft {
+ 
+ #include "src/compiler/turboshaft/define-assembler-macros.inc"
+diff --git a/src/deoptimizer/frame-description.h b/src/deoptimizer/frame-description.h
+index 39fe7f6b92c..c3fef4ed99a 100644
+--- a/src/deoptimizer/frame-description.h
++++ b/src/deoptimizer/frame-description.h
+@@ -12,6 +12,12 @@
+ #include "src/execution/frame-constants.h"
+ #include "src/utils/boxed-float.h"
+ 
++// TODO(gabylb): zos - conflicts with top_ from contextual.h;
++// undo when thread_local is supported.
++#ifdef V8_OS_ZOS
++#undef top_
++#endif
++
+ namespace v8 {
+ namespace internal {
+ 
+diff --git a/src/execution/frames.h b/src/execution/frames.h
+index 6302d72911c..8cbfb320f13 100644
+--- a/src/execution/frames.h
++++ b/src/execution/frames.h
+@@ -20,6 +20,12 @@
+ #include "src/wasm/wasm-code-manager.h"
+ #endif  // V8_ENABLE_WEBASSEMBLY
+ 
++#if V8_OS_ZOS
++// TODO(gabylb): zos - This conflicts with base_ def'n in ptr-compr.h
++// thread_local workaroud.
++#undef base_
++#endif
++
+ //
+ // Frame inheritance hierarchy (please keep in sync with frame-constants.h):
+ // - CommonFrame
+diff --git a/src/heap/base/worklist.h b/src/heap/base/worklist.h
+index e6eb0e4d6b8..f209b4edfeb 100644
+--- a/src/heap/base/worklist.h
++++ b/src/heap/base/worklist.h
+@@ -13,6 +13,12 @@
+ #include "src/base/platform/memory.h"
+ #include "src/base/platform/mutex.h"
+ 
++#ifdef V8_OS_ZOS
++// TODO(gabylb): zos - conflicts with top_ in contextual.h;
++// undo when thread_local is supported.
++#undef top_
++#endif
++
+ namespace heap::base {
+ namespace internal {
+ 
+diff --git a/src/heap/linear-allocation-area.h b/src/heap/linear-allocation-area.h
+index 7b8c9c04490..8b7cf10c4aa 100644
+--- a/src/heap/linear-allocation-area.h
++++ b/src/heap/linear-allocation-area.h
+@@ -10,6 +10,12 @@
+ #include "include/v8-internal.h"
+ #include "src/common/checks.h"
+ 
++// TODO(gabylb) - zos: conflicts with top_ from contextual.h;
++// undo when thread_local is supported.
++#ifdef V8_OS_ZOS
++#undef top_
++#endif
++
+ namespace v8 {
+ namespace internal {
+ 
+diff --git a/src/parsing/func-name-inferrer.h b/src/parsing/func-name-inferrer.h
+index 2c7f1d58179..508924e8a46 100644
+--- a/src/parsing/func-name-inferrer.h
++++ b/src/parsing/func-name-inferrer.h
+@@ -10,6 +10,12 @@
+ #include "src/base/macros.h"
+ #include "src/base/pointer-with-payload.h"
+ 
++// TODO(gabylb): zos - conflicts with top_ from contextual.h;
++// undo when thread_local is supported.
++#ifdef V8_OS_ZOS
++#undef top_
++#endif
++
+ namespace v8 {
+ 
+ namespace internal {
+diff --git a/src/utils/allocation.h b/src/utils/allocation.h
+index 6c40673063a..658b0d7cf16 100644
+--- a/src/utils/allocation.h
++++ b/src/utils/allocation.h
+@@ -12,6 +12,12 @@
+ #include "src/base/platform/memory.h"
+ #include "src/init/v8.h"
+ 
++#if V8_OS_ZOS
++// TODO(gabylb): zos - This conflicts with base_ def'n in ptr-compr.h
++// thread_local workaroud.
++#undef base_
++#endif
++
+ namespace v8 {
+ 
+ namespace base {
+diff --git a/src/base/platform/platform.h b/src/base/platform/platform.h
+index 581ba2704a5..f5c676ad4a3 100644
+--- a/src/base/platform/platform.h
++++ b/src/base/platform/platform.h
+@@ -64,6 +64,12 @@ extern "C" unsigned long __readfsdword(unsigned long);  // NOLINT(runtime/int)
+ #endif                                       // V8_CC_MSVC && V8_HOST_ARCH_IA32
+ #endif                                       // V8_NO_FAST_TLS
+ 
++#if V8_OS_ZOS
++// TODO(gabylb): zos - This conflicts with base_ def'n in ptr-compr.h
++// thread_local workaroud.
++#undef base_
++#endif
++
+ namespace heap::base {
+ class Stack;
+ }
+diff --git a/src/d8/d8.cc b/src/d8/d8.cc
+index 6101c651a0a..b366ad45ba8 100644
+--- a/src/d8/d8.cc
++++ b/src/d8/d8.cc
+@@ -125,7 +125,12 @@ namespace v8 {
+ namespace {
+ 
+ // Set on worker threads to the current Worker instance.
++#if V8_OS_ZOS
++__tlssim<Worker*> __current_worker_impl(nullptr);
++#define current_worker_ (*__current_worker_impl.access())
++#else
+ thread_local Worker* current_worker_ = nullptr;
++#endif
+ 
+ #ifdef V8_FUZZILLI
+ bool fuzzilli_reprl = true;
+diff --git a/src/execution/isolate.h b/src/execution/isolate.h
+index 3eebafce4ed..40399b530d5 100644
+--- a/src/execution/isolate.h
++++ b/src/execution/isolate.h
+@@ -2749,9 +2749,18 @@ class V8_EXPORT_PRIVATE Isolate final : private HiddenFactory {
+ // These are outside the Isolate class with extern storage because in clang-cl,
+ // thread_local is incompatible with dllexport linkage caused by
+ // V8_EXPORT_PRIVATE being applied to Isolate.
++#if V8_OS_ZOS
++// TODO(gabylb): zos - undo when thread_local is supported.
++extern __tlssim<Isolate::PerIsolateThreadData*> g_current_per_isolate_thread_data_impl;
++#define g_current_per_isolate_thread_data_ (*g_current_per_isolate_thread_data_impl.access())
++
++extern __tlssim<Isolate*> g_current_isolate_impl;
++#define g_current_isolate_ (*g_current_isolate_impl.access())
++#else
+ extern thread_local Isolate::PerIsolateThreadData*
+     g_current_per_isolate_thread_data_ V8_CONSTINIT;
+ extern thread_local Isolate* g_current_isolate_ V8_CONSTINIT;
++#endif
+ 
+ #undef FIELD_ACCESSOR
+ #undef THREAD_LOCAL_TOP_ACCESSOR
+diff --git a/src/execution/isolate.cc b/src/execution/isolate.cc
+index 4b69383800f..66cf43fe6c9 100644
+--- a/src/execution/isolate.cc
++++ b/src/execution/isolate.cc
+@@ -501,9 +501,20 @@ size_t Isolate::HashIsolateForEmbeddedBlob() {
+ 
+ Isolate* Isolate::process_wide_shared_space_isolate_{nullptr};
+ 
++#if V8_OS_ZOS
++// TODO(gabylb): zos - undo when thread_local is supported.
++[[clang::no_destroy]]
++__tlssim<Isolate::PerIsolateThreadData*> g_current_per_isolate_thread_data_impl(nullptr);
++#define g_current_per_isolate_thread_data_ (*g_current_per_isolate_thread_data_impl.access())
++
++[[clang::no_destroy]]
++__tlssim<Isolate*> g_current_isolate_impl(nullptr);
++#define g_current_isolate_ (*g_current_isolate_impl.access())
++#else
+ thread_local Isolate::PerIsolateThreadData* g_current_per_isolate_thread_data_
+     V8_CONSTINIT = nullptr;
+ thread_local Isolate* g_current_isolate_ V8_CONSTINIT = nullptr;
++#endif
+ 
+ namespace {
+ // A global counter for all generated Isolates, might overflow.
+diff --git a/src/heap/read-only-spaces.cc b/src/heap/read-only-spaces.cc
+index 95a29211033..55c2de219c3 100644
+--- a/src/heap/read-only-spaces.cc
++++ b/src/heap/read-only-spaces.cc
+@@ -24,6 +24,12 @@
+ #include "src/snapshot/snapshot-source-sink.h"
+ #include "src/snapshot/snapshot-utils.h"
+ 
++// TODO(gabylb): zos - conflicts with top_ from contextual.h;
++// undo when thread_local is supported.
++#ifdef V8_OS_ZOS
++#undef top_
++#endif
++
+ namespace v8 {
+ namespace internal {
+ 
+diff --git a/src/heap/read-only-spaces.h b/src/heap/read-only-spaces.h
+index f305fac2198..b37bf8d0ff9 100644
+--- a/src/heap/read-only-spaces.h
++++ b/src/heap/read-only-spaces.h
+@@ -20,6 +20,12 @@
+ #include "src/heap/memory-chunk-metadata.h"
+ #include "src/heap/mutable-page-metadata.h"
+ 
++// TODO(gabylb): zos - conflicts with top_ from contextual.h;
++// undo when thread_local is supported.
++#ifdef V8_OS_ZOS
++#undef top_
++#endif
++
+ namespace v8 {
+ namespace internal {
+ 

@@ -1,0 +1,27 @@
+diff --git a/test/unittests/unittests.status b/test/unittests/unittests.status
+index 195660be54b..d1bccced1f3 100644
+--- a/test/unittests/unittests.status
++++ b/test/unittests/unittests.status
+@@ -97,6 +97,22 @@
+   'SysInfoTest.AmountOfPhysicalMemory': [SKIP],
+ }],  # system == aix
+ 
++##############################################################################
++['system == zos', {
++  # TODO(gabylb) - zos: undo skip when mmap, that would enable use of
++  # mprotect(), is supported.
++  'FlagDefinitionsTest.FreezeFlags': [SKIP],
++  'GCInfoTableDeathTest.OldTableAreaIsReadOnly': [SKIP],
++  'MacroAssemblerTest.TestHardAbort': [SKIP],
++  'MemoryAllocationPermissionsTest.DoTest': [SKIP],
++  'SetDataReadOnlyTest.SetDataReadOnly': [SKIP],
++  'VirtualAddressSpaceTest.TestEmulatedSubspace': [SKIP],
++  'PageBackendDeathTest.DestructingBackendDestroysPageMemory': [SKIP],
++  'PageBackendDeathTest.BackGuardPageAccessCrashes': [SKIP],
++  'PageBackendDeathTest.FrontGuardPageAccessCrashes': [SKIP],
++  'PageBackendDeathTest.ReservationIsFreed': [SKIP],
++}],  # system == zos
++
+ ##############################################################################
+ ['system == aix and component_build', {
+   # FreezeFlags relies on mprotect() method, which does not work by default on

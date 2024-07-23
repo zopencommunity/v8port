@@ -1,0 +1,15 @@
+diff --git a/re2/re2.h b/re2/re2.h
+index d797bc0..9c35b4e 100644
+--- a/re2/re2.h
++++ b/re2/re2.h
+@@ -1028,7 +1028,9 @@ namespace hooks {
+ // As per https://github.com/google/re2/issues/325, thread_local support in
+ // MinGW seems to be buggy. (FWIW, Abseil folks also avoid it.)
+ #define RE2_HAVE_THREAD_LOCAL
+-#if (defined(__APPLE__) && !(defined(TARGET_OS_OSX) && TARGET_OS_OSX)) || defined(__MINGW32__)
++// TODO(gabylb):zos - remove __MVS__ when thread_local support is available.
++#if (defined(__APPLE__) && !(defined(TARGET_OS_OSX) && TARGET_OS_OSX)) || \
++    defined(__MINGW32__) || defined(__MVS__)
+ #undef RE2_HAVE_THREAD_LOCAL
+ #endif
+ 

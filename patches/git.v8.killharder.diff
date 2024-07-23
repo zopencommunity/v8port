@@ -1,0 +1,21 @@
+diff --git a/tools/testrunner/local/command.py b/tools/testrunner/local/command.py
+index b9a6eb51d46..b18792a100a 100644
+--- a/tools/testrunner/local/command.py
++++ b/tools/testrunner/local/command.py
+@@ -246,6 +246,16 @@ class PosixCommand(DesktopCommand):
+     # Forcefully kill processes.
+     os.killpg(process.pid, signal.SIGKILL)
+ 
++    if sys.platform == 'zos':
++      # Use killharder z/OS utility (even 'kill -SIGKILL' from the command line
++      # doesn't always kill a process.):
++      from distutils.spawn import find_executable
++      if find_executable('killharder') is not None:
++        os.system('killharder ' + str(process.pid))
++      else:
++        # Using SIGTERM instead of SIGKILL has been shown to work in some cases.
++        process.terminate()
++
+ 
+ def taskkill_windows(process, verbose=False, force=True):
+   force_flag = ' /F' if force else ''

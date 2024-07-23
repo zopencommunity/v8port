@@ -1,0 +1,53 @@
+diff --git a/tools/wasm/BUILD.gn b/tools/wasm/BUILD.gn
+index 16701009734..58ef06987fc 100644
+--- a/tools/wasm/BUILD.gn
++++ b/tools/wasm/BUILD.gn
+@@ -25,6 +25,10 @@ v8_executable("wami") {
+     "../..:v8_libplatform",
+   ]
+ 
++  if (current_os == "zos" && is_component_build) {
++    deps += [ "../../:zoslib" ]
++  }
++
+   sources = [
+     "mjsunit-module-disassembler-impl.h",
+     "module-inspector.cc",
+diff --git a/test/unittests/BUILD.gn b/test/unittests/BUILD.gn
+index 4af596780b9..6baa059e503 100644
+--- a/test/unittests/BUILD.gn
++++ b/test/unittests/BUILD.gn
+@@ -87,6 +87,9 @@ v8_source_set("v8_heap_base_unittests_sources") {
+     "//testing/gmock",
+     "//testing/gtest",
+   ]
++  if (current_os == "zos" && is_component_build) {
++    deps += [ "../../:zoslib" ]
++  }
+ }
+ 
+ # Stand-alone target for C++ GC unittests. This is used to ensure that it
+@@ -888,6 +891,9 @@ v8_executable("generate-bytecode-expectations") {
+     "../..:v8_libplatform",
+     "//build/win:default_exe_manifest",
+   ]
++  if (current_os == "zos" && is_component_build) {
++    deps += [ "../..:zoslib" ]
++  }
+ 
+   data = [ "interpreter/bytecode_expectations/" ]
+ }
+diff --git a/test/mkgrokdump/BUILD.gn b/test/mkgrokdump/BUILD.gn
+index f0167070a09..1b12cd5d576 100644
+--- a/test/mkgrokdump/BUILD.gn
++++ b/test/mkgrokdump/BUILD.gn
+@@ -21,6 +21,9 @@ v8_executable("mkgrokdump") {
+     "../..:v8_libplatform",
+     "//build/win:default_exe_manifest",
+   ]
++  if (current_os == "zos" && is_component_build) {
++    deps += [ "../../:zoslib" ]
++  }
+ 
+   data_deps = [ "../../tools:v8_testrunner" ]
+ 

@@ -1,0 +1,17 @@
+diff --git a/src/base/platform/platform.cc b/src/base/platform/platform.cc
+index 328e9d890d6..c075c32d67c 100644
+--- a/src/base/platform/platform.cc
++++ b/src/base/platform/platform.cc
+@@ -24,8 +30,12 @@ Stack::StackSlot Stack::GetStackStartUnchecked() {
+ 
+ // static
+ Stack::StackSlot Stack::GetStackStart() {
++#if !V8_OS_ZOS
++  // On z/OS, this fails if C is called from JS code, since the stack pointer
++  // is overwritten on entry to JS and so the stack cannot be traversed.
+   DCHECK_IMPLIES(thread_stack_start,
+                  thread_stack_start == ObtainCurrentThreadStackStart());
++#endif
+   return GetStackStartUnchecked();
+ }
+ 

@@ -1,0 +1,26 @@
+diff --git a/src/google/protobuf/port_def.inc b/src/google/protobuf/port_def.inc
+index f1c46c2..b3daa3a 100644
+--- a/src/google/protobuf/port_def.inc
++++ b/src/google/protobuf/port_def.inc
+@@ -616,6 +616,8 @@
+ #endif
+ #if defined(_MSC_VER)
+ #define PROTOBUF_THREAD_LOCAL __declspec(thread)
++#elif defined(__MVS__) // TODO(gabylb): zos - revisit when thread_local is in.
++#define PROTOBUF_THREAD_LOCAL
+ #else
+ #define PROTOBUF_THREAD_LOCAL __thread
+ #endif
+diff --git a/src/google/protobuf/stubs/port.h b/src/google/protobuf/stubs/port.h
+index db54c33..935cc55 100644
+--- a/src/google/protobuf/stubs/port.h
++++ b/src/google/protobuf/stubs/port.h
+@@ -65,6 +65,8 @@
+ #include <sys/isa_defs.h>  // __BYTE_ORDER
+ #elif defined(_AIX) || defined(__TOS_AIX__)
+ #include <sys/machine.h>  // BYTE_ORDER
++#elif defined(__MVS__)
++#include <sys/endian.h>  // BYTE_ORDER
+ #else
+ #if !defined(__QNX__)
+ #include <endian.h>  // __BYTE_ORDER

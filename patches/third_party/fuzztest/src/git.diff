@@ -1,0 +1,41 @@
+diff --git a/fuzztest/internal/coverage.cc b/fuzztest/internal/coverage.cc
+index 59fcfe8..e4e5555 100644
+--- a/fuzztest/internal/coverage.cc
++++ b/fuzztest/internal/coverage.cc
+@@ -30,6 +30,10 @@
+ #include "./fuzztest/internal/logging.h"
+ #include "./fuzztest/internal/table_of_recent_compares.h"
+ 
++#ifdef __MVS__
++#include "zos-base.h"
++#endif
++
+ // IMPORTANT: Almost all functions (e.g. Update()) in this file will
+ // be called during coverage instrumentation callbacks.
+ //
+@@ -121,7 +125,12 @@ void ExecutionCoverage::UpdateMaxStack(uintptr_t PC) {
+   // Avoid reentrancy here. Code below could trigger reentrancy and if we don't
+   // stop it we could easily cause an infinite recursion.
+   // We only allow a single call to `UpdateMaxStack` per thread.
++#ifdef __MVS__
++  static __tlssim<bool> __updating_max_stack{false};
++  #define updating_max_stack (*__updating_max_stack.access())
++#else
+   static thread_local bool updating_max_stack = false;
++#endif
+   if (updating_max_stack) {
+     // Already updating up the stack.
+     return;
+diff --git a/fuzztest/internal/runtime.cc b/fuzztest/internal/runtime.cc
+index c84a4fc..2a36997 100644
+--- a/fuzztest/internal/runtime.cc
++++ b/fuzztest/internal/runtime.cc
+@@ -14,7 +14,7 @@
+ 
+ #include "./fuzztest/internal/runtime.h"
+ 
+-#if !defined(_WIN32) && !defined(__Fuchsia__)
++#if !defined(_WIN32) && !defined(__Fuchsia__) && !defined(__MVS__)
+ #define FUZZTEST_HAS_RUSAGE
+ #include <sys/resource.h>
+ #endif

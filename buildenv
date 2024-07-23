@@ -27,8 +27,6 @@ export ZOPEN_CATEGORIES="development language core"
 #COMPONENT_BUILD="is_component_build=true"
 [ -z "${COMPONENT_BUILD}" ] && COMPONENT_BUILD=""
 
-
-
 zopen_check_results()
 {
   dir="$1"
@@ -49,7 +47,6 @@ zopen_get_version()
   echo "1.0.0"
 }
 
-
 #
 # Hooks/Routines called during `$ zopen build`
 #
@@ -63,13 +60,10 @@ zopen_init()
   if ! type python3 >/dev/null ; then
     printError "need python3 venv with packages: httplib2 and six"
   fi
-
-
 }
 
 # Called Second.
 zopen_build() {
-
   echo "### zopen_build ###"
   # enable tracing.
   #set -x
@@ -114,7 +108,7 @@ zopen_build() {
   # change into v8base
   cd v8base
   # fetch
-  echo "fetch v8 ..."
+  echo "fetch v8..."
   fetch v8
   # change dirs to v8
   cd v8
@@ -122,60 +116,37 @@ zopen_build() {
   echo "git checkout main"
   git checkout main
   # use the specified commit hash
-  echo "git reset fce38915e4c7c73c0e7f77bb13e2a78514968d35 --hard"
-  git reset fce38915e4c7c73c0e7f77bb13e2a78514968d35 --hard
-  # Modify DEPS via sed
-  echo "Modify DEPS via sed"
-  sed -i -f${ZOPEN_ROOT}/patches/DEPS.sed DEPS
+  echo "git reset c845aba112d05521a9ece51810d2e1a9ca6379da --hard"
+  git reset c845aba112d05521a9ece51810d2e1a9ca6379da --hard
   # Use depot tools gclient sync
   echo "gclient sync -D"
   gclient sync -D -v
   #
   # apply patches
   #
-  echo "Apply patch for overall repo"
-  git apply ${ZOPEN_ROOT}/patches/git.20231122.fce38915e4.diff
-  echo "Apply patch for toolchain config"
-  cd build
-  git apply ${ZOPEN_ROOT}/patches/build/git.20231122.968682938b.diff
-  echo "Apply patch for abseil c++ libaries"
-  cd ${ZOPEN_ROOT}/v8base/v8/third_party/abseil-cpp
-  git apply ${ZOPEN_ROOT}/patches/third_party/abseil-cpp/git.20231122.1e8861f03f.diff
-  echo "Apply patch for googletest"
-  cd ${ZOPEN_ROOT}/v8base/v8/third_party/googletest/src
-  git apply ${ZOPEN_ROOT}/patches/third_party/googletest/src/git.20231122.af29db7ec2.diff
-  # return to v8port/v8base/v8 level
-  cd ${ZOPEN_ROOT}/v8base/v8
-  #
-  # apply pax files
-  #
-  echo "Apply pax files to overall repo"
-  pax -p p -rzf ${ZOPEN_ROOT}/patches/src.zos.20231122.fce38915e4.pax
+  git stash
+  for df in `find ${ZOPEN_ROOT}/patches/ -type f -name "git.*diff" | sort`; do
+    dirfile=`echo $df | sed "s:^${ZOPEN_ROOT}/::"`
+    srcdir=`dirname $dirfile` 
+    [[ "$srcdir" != "." ]] && pushd $srcdir && git stash
+    echo "git apply $MAINDIR/$df from `pwd`"
+    git apply $MAINDIR/$df
+    [[ "$srcdir" != "." ]] && popd
+  done
+
   echo "Apply pax files to buildtools"
-  cd buildtools
+  pushd buildtools
   pax -p p -rzf ${ZOPEN_ROOT}/patches/buildtools/buildtools.zos.20231122.92b79f4d75.pax
-  # return to v8port/v8base/v8 level
-  cd ${ZOPEN_ROOT}/v8base/v8
-  #
-  # download and build zoslib from IBMRuntimes
-  #
-  cd third_party
-  git clone git@github.com:ibmruntimes/zoslib
-  cd zoslib
-  ./build.sh -c -r -t
-  # return to v8port/v8base/v8 level
-  cd ${ZOPEN_ROOT}/v8base/v8
+  popd
   #
   # Prepare v8 for building
   #
-  export ZOSLIB_LIBPATH=${ZOPEN_ROOT}/v8base/v8/third_party/zoslib/install/lib
-  export PATH="${ZOPEN_ROOT}/v8base/v8/buildtools/zos:$PATH" # for the 'ar' wrapper
-  cd buildtools/zos
-  echo "change dir to v8base/v8/buildtools/zos level......"
+  pushd buildtools/zos
+  echo "change dir to v8base/v8/buildtools/zos level..."
   echo "make link to gn in v8base/v8/buildtools/zos"
   ln -s "${GN_HOME}/gn" .
-  # return to v8port/v8base/v8 level
-  cd ${ZOPEN_ROOT}/v8base/v8
+  popd
+  export PATH="${ZOPEN_ROOT}/v8base/v8/buildtools/zos:$PATH" # for the 'ar' wrapper
 
   #
   # Do the v8 build
@@ -185,9 +156,11 @@ zopen_build() {
   echo "Perform build using ninja..."
   V=1 ninja -v -j ${ZOPEN_NUM_JOBS} -C out/zos_s390x.release/
 
-
   # on exit return to the top level of the git repo
   cd ${ZOPEN_ROOT}
+
+  # This is required when the built binaries (e.g. mksnapshot) and tests are run
+  export LIBPATH=${ZOPEN_ROOT}/out/zos_s390x.release:$LIBPATH
 
   # disable tracing
   #set +x
@@ -256,7 +229,4 @@ zopen_append_to_setup()
   # ${HOME}/zopen/usr/local/zopen/v8/v8-DEV
 
   echo "echo \"append_to_setup()\""
-
 }
-
-

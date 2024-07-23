@@ -1,0 +1,48 @@
+diff --git a/test/unittests/libsampler/signals-and-mutexes-unittest.cc b/test/unittests/libsampler/signals-and-mutexes-unittest.cc
+index a72b47660df..281178efbbc 100644
+--- a/test/unittests/libsampler/signals-and-mutexes-unittest.cc
++++ b/test/unittests/libsampler/signals-and-mutexes-unittest.cc
+@@ -35,6 +35,7 @@ struct sigaction old_signal_handler;
+ 
+ void InstallSignalHandler() {
+   struct sigaction sa;
++  memset(&sa, 0, sizeof(sa));
+   sa.sa_sigaction = &HandleProfilerSignal;
+   sigemptyset(&sa.sa_mask);
+   sa.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;
+diff --git a/test/unittests/utils/allocation-unittest.cc b/test/unittests/utils/allocation-unittest.cc
+index 56c639850db..48e138b6171 100644
+--- a/test/unittests/utils/allocation-unittest.cc
++++ b/test/unittests/utils/allocation-unittest.cc
+@@ -47,6 +47,7 @@ class MemoryAllocationPermissionsTest : public TestWithPlatform {
+  protected:
+   void SetUp() override {
+     struct sigaction action;
++    memset(&action, 0, sizeof(action));
+     action.sa_sigaction = SignalHandler;
+     sigemptyset(&action.sa_mask);
+     action.sa_flags = SA_SIGINFO;
+diff --git a/test/unittests/wasm/memory-protection-unittest.cc b/test/unittests/wasm/memory-protection-unittest.cc
+index 8e1723428cb..1ef039988aa 100644
+--- a/test/unittests/wasm/memory-protection-unittest.cc
++++ b/test/unittests/wasm/memory-protection-unittest.cc
+@@ -169,6 +169,7 @@ class ParameterizedMemoryProtectionTestWithSignalHandling
+       CHECK_NULL(current_handler_scope_);
+       current_handler_scope_ = this;
+       struct sigaction sa;
++      memset(&sa, 0, sizeof(sa));
+       sa.sa_sigaction = &HandleSignal;
+       sigemptyset(&sa.sa_mask);
+       sa.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;
+diff --git a/src/d8/d8.cc b/src/d8/d8.cc
+index 6101c651a0a..8849a95a2e1 100644
+--- a/src/d8/d8.cc
++++ b/src/d8/d8.cc
+@@ -6103,6 +6109,7 @@ void d8_install_sigterm_handler() {
+ #ifdef V8_OS_POSIX
+   CHECK(!i::v8_flags.fuzzing);
+   struct sigaction sa;
++  memset(&sa, 0, sizeof(sa));
+   sa.sa_sigaction = d8_sigterm_handler;
+   sigemptyset(&sa.sa_mask);
+   sa.sa_flags = 0;
