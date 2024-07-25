@@ -126,7 +126,7 @@ zopen_build() {
   #
   git stash
   for df in `find ${ZOPEN_ROOT}/patches/ -type f -name "git.*diff" | sort`; do
-    dirfile=`echo $df | sed "s:^${ZOPEN_ROOT}/::"`
+    dirfile=`echo $df | sed "s:^${ZOPEN_ROOT}/patches/::"`
     srcdir=`dirname $dirfile` 
     [[ "$srcdir" != "." ]] && pushd $srcdir && git stash
     echo "git apply $MAINDIR/$df from `pwd`"
