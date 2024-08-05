@@ -73,13 +73,88 @@ zopen_build() {
   # update the compiler settings
   unset CFLAGS CXXFLAGS LDFLAGS
 
-  # Disable updating depot_tools
+  #
+  # FAIL ModuleNotFoundError: No module named 'six.moves'
+  # This is the one which seems should work
+  #
+  #export DEPOT_TOOLS_UPDATE=0
+  #export CUSTOM_CIPD_CLIENT=${DEPOT_TOOLS_HOME}/.cipd_client
+  #export DEPOT_TOOLS_BOOTSTRAP_PYTHON3=0
+  #export VPYTHON_BYPASS="manually managed python not supported by chrome operations"
+  # RESULT
+  # DEPOT_TOOLS_HOME : /z/jd895801/zopen/usr/local/zopen/depot_tools/depot_tools-main.20240726_201652.zos
+  # CUSTOM_CIPD_CLIENT : /z/jd895801/zopen/usr/local/zopen/depot_tools/depot_tools-main.20240726_201652.zos/.cipd_client
+  # VPYTHON_BYPASS : manually managed python not supported by chrome operations
+  # $ ls -l /z/jd895801/zopen/usr/local/zopen/depot_tools/depot_tools-main.20240726_201652.zos/.cipd_client
+  # -rwxrwxr-x 1 JD895801 TTOODGRP 53997568 Jul 25 11:20 /z/jd895801/zopen/usr/local/zopen/depot_tools/depot_tools-main.20240726_201652.zos/.cipd_client
+
+
+  #
+  # FAIL .cipd no such file or directory
+  # This one is more in line with Gaby's comments in discord. It has his litteral correctino
+  #
+  # This format will simply show these in the output log.  This is the wrong form for the build routine, hence I was using
+  # the export explicitly.  This form is for the append to setup env routine.
+  #echo "export DEPOT_TOOLS_UPDATE=0"
+  #echo "export DEPOT_TOOLS_BOOTSTRAP_PYTHON3=0"
+  #echo "export VPYTHON_BYPASS='manually managed python not supported by chrome operations'"
+  #echo "export CUSTOM_CIPD_CLIENT=$ZOPEN_INSTALL_DIR/.cipd_client"
+
+  #
+  # FAIL /jenkins/zopen/usr/local/zopen/depot_tools/depot_tools-main/.cipd_client: EDC5129I No such file or directory.
+  # This one is more in line with Gaby's comments in discord. It has his litteral correctino.  This has the correction
+  # to his correction for CIPD
+  #
+  #echo "export DEPOT_TOOLS_UPDATE=0"
+  #echo "export DEPOT_TOOLS_BOOTSTRAP_PYTHON3=0"
+  #echo "export VPYTHON_BYPASS='manually managed python not supported by chrome operations'"
+  #echo "export CUSTOM_CIPD_CLIENT=${DEPOT_TOOLS_HOME}/.cipd_client"
+  # RESULT
+  #DEPOT_TOOLS_HOME : /z/jd895801/zopen/usr/local/zopen/depot_tools/depot_tools-main.20240726_201652.zos
+  #CUSTOM_CIPD_CLIENT : /jenkins/zopen/usr/local/zopen/depot_tools/depot_tools-main/.cipd_client
+  #VPYTHON_BYPASS : manually managed python not supported by chrome operations
+
+  #
+  # FAIL in <module> from six.moves import configparser ModuleNotFoundError: No module named 'six.moves'
+  #
+  # At one point, I thought I had a working copy.  This is an effort to try to recreate that one.
+  # In that case I had left a set version in while also having an export.  It seemed to work
+  # but now it appears I had spoken to soon and it failed if I let it run long enough.
   export DEPOT_TOOLS_UPDATE=0
+  # do the export and the set
+  CUSTOM_CIPD_CLIENT=${DEPOT_TOOLS_HOME}/.cipd_client
+  export CUSTOM_CIPD_CLIENT=${DEPOT_TOOLS_HOME}/.cipd_client
+  export DEPOT_TOOLS_BOOTSTRAP_PYTHON3=0
+  export VPYTHON_BYPASS='manually managed python not supported by chrome operations'
+  echo "export DEPOT_TOOLS_UPDATE=0"
+  echo "export DEPOT_TOOLS_BOOTSTRAP_PYTHON3=0"
+  echo "export VPYTHON_BYPASS='manually managed python not supported by chrome operations'"
+  echo "export CUSTOM_CIPD_CLIENT=${DEPOT_TOOLS_HOME}/.cipd_client"
+  # RESULT
+  # DEPOT_TOOLS_HOME : /z/jd895801/zopen/usr/local/zopen/depot_tools/depot_tools-main.20240726_201652.zos
+  # CUSTOM_CIPD_CLIENT : /z/jd895801/zopen/usr/local/zopen/depot_tools/depot_tools-main.20240726_201652.zos/.cipd_client
+  # VPYTHON_BYPASS : manually managed python not supported by chrome operations
+
+
+
+
+  # Disable updating depot_tools
+
+  # Point to custom CIPD_CLIENT
+
+  # Disable updating depot_tools
 
   # Disable commands:
   # * ensure_bootstrap
   # * update_depot_tools
-  export DEPOT_TOOLS_BOOTSTRAP_PYTHON3=0
+
+  # Disable vpython3 (use python directly); see depot_tools/vpython3.
+
+  # Run the CIPD client that was built on z/OS; see depot_tools/cipd.
+
+  # Disable commands:
+  # * ensure_bootstrap
+  # * update_depot_tools
 
   # Create the virtual env in the v8port install dir
   echo "    Creating a python venv..."
@@ -94,11 +169,21 @@ zopen_build() {
   echo "updating the virtual env pip"
   python -m pip install -U pip
 
+  # Update the PYTHON_EXECUTABLE to fix six.moves problem
+  echo "PYTHON : $(type python)"
+  echo "fetch : $(type fetch)"
+  echo "PATH : ${PATH}"
+  echo "DEPOT_TOOLS_HOME : ${DEPOT_TOOLS_HOME}"
+  echo "CUSTOM_CIPD_CLIENT : ${CUSTOM_CIPD_CLIENT}"
+  echo "VPYTHON_BYPASS : ${VPYTHON_BYPASS}"
+
   # Install the necessary requirements
   echo "Installing reqired package in venv"  
   pip install -r requirements.txt
 
-  # Using depot_tools disable metrics.
+  # Try this to fix six.moves
+  pip install --upgrade six
+
   echo "Invoking gclient metrics --opt-out"
   # Comment out this line if you wish to participate.
   gclient metrics --opt-out
@@ -110,6 +195,11 @@ zopen_build() {
   # fetch
   echo "fetch v8..."
   fetch v8
+
+  #JFD EARLY EXIT
+  echo "JFD EARLY EXIT"
+  exit
+
   # change dirs to v8
   cd v8
   # checkout main
@@ -128,6 +218,7 @@ zopen_build() {
   for df in `find ${ZOPEN_ROOT}/patches/ -type f -name "git.*diff" | sort`; do
     dirfile=`echo $df | sed "s:^${ZOPEN_ROOT}/patches/::"`
     srcdir=`dirname $dirfile` 
+    echo "under $(pwd): srcdir=${srcdir}"
     [[ "$srcdir" != "." ]] && pushd $srcdir && git stash
     echo "git apply $MAINDIR/$df from `pwd`"
     git apply $MAINDIR/$df

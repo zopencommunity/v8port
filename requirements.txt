@@ -1,3 +1,8 @@
 httplib2
-six
+# six is definitely used
+#six
 setuptools
+# this also has a six implementation
+# I've seen some fixes on internet which referenced using this lib
+# as a source of six
+urllib3
