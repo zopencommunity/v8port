@@ -73,17 +73,19 @@ if [ ${RESUME} -eq 0 ]; then
     fi
 fi
 
-# start ssh-agent so that the git operations can
-# be done without issuing passphrase during automated
-# builds.
+
+# start ssh-agent
 if ps -A | grep ssh-agent; then
     echo "ssh-agent is already running"
+    echo "connecting to existing now..."
+    AGENT_SCRIPT=$(ssh-agent -s)
+    # Now run this script in current shell
+    eval "${AGENT_SCRIPT}"
+
 else
-    echo "ssh-agent is not ot running"
+    echo "ssh-agent is not running"
     echo "starting now..."
     eval `ssh-agent`
-    ssh-add ${HOME}/.ssh/id_ed25519
 fi
-
 
 
