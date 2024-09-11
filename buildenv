@@ -73,63 +73,12 @@ zopen_build() {
   # update the compiler settings
   unset CFLAGS CXXFLAGS LDFLAGS
 
-  #
-  # FAIL ModuleNotFoundError: No module named 'six.moves'
-  # This is the one which seems should work
-  #
-  #export DEPOT_TOOLS_UPDATE=0
-  #export CUSTOM_CIPD_CLIENT=${DEPOT_TOOLS_HOME}/.cipd_client
-  #export DEPOT_TOOLS_BOOTSTRAP_PYTHON3=0
-  #export VPYTHON_BYPASS="manually managed python not supported by chrome operations"
-  # RESULT
-  # DEPOT_TOOLS_HOME : /z/jd895801/zopen/usr/local/zopen/depot_tools/depot_tools-main.20240726_201652.zos
-  # CUSTOM_CIPD_CLIENT : /z/jd895801/zopen/usr/local/zopen/depot_tools/depot_tools-main.20240726_201652.zos/.cipd_client
-  # VPYTHON_BYPASS : manually managed python not supported by chrome operations
-  # $ ls -l /z/jd895801/zopen/usr/local/zopen/depot_tools/depot_tools-main.20240726_201652.zos/.cipd_client
-  # -rwxrwxr-x 1 JD895801 TTOODGRP 53997568 Jul 25 11:20 /z/jd895801/zopen/usr/local/zopen/depot_tools/depot_tools-main.20240726_201652.zos/.cipd_client
-
-
-  #
-  # FAIL .cipd no such file or directory
-  # This one is more in line with Gaby's comments in discord. It has his litteral correctino
-  #
-  # This format will simply show these in the output log.  This is the wrong form for the build routine, hence I was using
-  # the export explicitly.  This form is for the append to setup env routine.
-  #echo "export DEPOT_TOOLS_UPDATE=0"
-  #echo "export DEPOT_TOOLS_BOOTSTRAP_PYTHON3=0"
-  #echo "export VPYTHON_BYPASS='manually managed python not supported by chrome operations'"
-  #echo "export CUSTOM_CIPD_CLIENT=$ZOPEN_INSTALL_DIR/.cipd_client"
-
-  #
-  # FAIL /jenkins/zopen/usr/local/zopen/depot_tools/depot_tools-main/.cipd_client: EDC5129I No such file or directory.
-  # This one is more in line with Gaby's comments in discord. It has his litteral correctino.  This has the correction
-  # to his correction for CIPD
-  #
-  #echo "export DEPOT_TOOLS_UPDATE=0"
-  #echo "export DEPOT_TOOLS_BOOTSTRAP_PYTHON3=0"
-  #echo "export VPYTHON_BYPASS='manually managed python not supported by chrome operations'"
-  #echo "export CUSTOM_CIPD_CLIENT=${DEPOT_TOOLS_HOME}/.cipd_client"
-  # RESULT
-  #DEPOT_TOOLS_HOME : /z/jd895801/zopen/usr/local/zopen/depot_tools/depot_tools-main.20240726_201652.zos
-  #CUSTOM_CIPD_CLIENT : /jenkins/zopen/usr/local/zopen/depot_tools/depot_tools-main/.cipd_client
-  #VPYTHON_BYPASS : manually managed python not supported by chrome operations
-
-  #
-  # FAIL in <module> from six.moves import configparser ModuleNotFoundError: No module named 'six.moves'
-  #
-  # At one point, I thought I had a working copy.  This is an effort to try to recreate that one.
-  # In that case I had left a set version in while also having an export.  It seemed to work
-  # but now it appears I had spoken to soon and it failed if I let it run long enough.
   export DEPOT_TOOLS_UPDATE=0
   # do the export and the set
   CUSTOM_CIPD_CLIENT=${DEPOT_TOOLS_HOME}/.cipd_client
   export CUSTOM_CIPD_CLIENT=${DEPOT_TOOLS_HOME}/.cipd_client
   export DEPOT_TOOLS_BOOTSTRAP_PYTHON3=0
   export VPYTHON_BYPASS='manually managed python not supported by chrome operations'
-  echo "export DEPOT_TOOLS_UPDATE=0"
-  echo "export DEPOT_TOOLS_BOOTSTRAP_PYTHON3=0"
-  echo "export VPYTHON_BYPASS='manually managed python not supported by chrome operations'"
-  echo "export CUSTOM_CIPD_CLIENT=${DEPOT_TOOLS_HOME}/.cipd_client"
   # RESULT
   # DEPOT_TOOLS_HOME : /z/jd895801/zopen/usr/local/zopen/depot_tools/depot_tools-main.20240726_201652.zos
   # CUSTOM_CIPD_CLIENT : /z/jd895801/zopen/usr/local/zopen/depot_tools/depot_tools-main.20240726_201652.zos/.cipd_client
@@ -170,12 +119,15 @@ zopen_build() {
   python -m pip install -U pip
 
   # Update the PYTHON_EXECUTABLE to fix six.moves problem
+  echo "****************************************"
   echo "PYTHON : $(type python)"
   echo "fetch : $(type fetch)"
   echo "PATH : ${PATH}"
+  echo "DEPOT_TOOLS_UPDATE: ${DEPOT_TOOLS_UPDATE}"
   echo "DEPOT_TOOLS_HOME : ${DEPOT_TOOLS_HOME}"
   echo "CUSTOM_CIPD_CLIENT : ${CUSTOM_CIPD_CLIENT}"
   echo "VPYTHON_BYPASS : ${VPYTHON_BYPASS}"
+  echo "****************************************"
 
   # Install the necessary requirements
   echo "Installing reqired package in venv"  
@@ -196,21 +148,50 @@ zopen_build() {
   echo "fetch v8..."
   fetch v8
 
+  # This seems to work ok. I do not see
+  # the AWS error after cleaning ~/zopen/usr/local/zopen/
+  # of all depot_tools entries.
   #JFD EARLY EXIT
-  echo "JFD EARLY EXIT"
-  exit
+  #echo "JFD EARLY EXIT"
+  #exit
 
   # change dirs to v8
   cd v8
   # checkout main
   echo "git checkout main"
   git checkout main
+
+  # somehow the git checkout calls third_party/.../update_depot_tools_toggle.py and 
+  # it seems to be trying to update.  However, there is a export ENV var to
+  # not update depot_tools.  Is this the problem?
+
+
+  #JFD EARLY EXIT
+  echo "JFD EARLY EXIT"
+  exit
+
   # use the specified commit hash
   echo "git reset c845aba112d05521a9ece51810d2e1a9ca6379da --hard"
   git reset c845aba112d05521a9ece51810d2e1a9ca6379da --hard
+
+  #JFD EARLY EXIT
+  echo "JFD EARLY EXIT"
+  exit
+
   # Use depot tools gclient sync
   echo "gclient sync -D"
+  echo "gclient is via: `type gclient`"
   gclient sync -D -v
+
+
+  # At this point we have the AWS error.
+  # Did it happen as a result of the gclient sync?  No. I saw the error before this.
+
+
+  #JFD EARLY EXIT
+  echo "JFD EARLY EXIT"
+  exit
+
   #
   # apply patches
   #
