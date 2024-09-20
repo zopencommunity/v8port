@@ -121,12 +121,13 @@ zopen_build() {
   # Update the PYTHON_EXECUTABLE to fix six.moves problem
   echo "****************************************"
   echo "PYTHON : $(type python)"
-  echo "fetch : $(type fetch)"
+  echo "fetch : $(type -p fetch)"
   echo "PATH : ${PATH}"
   echo "DEPOT_TOOLS_UPDATE: ${DEPOT_TOOLS_UPDATE}"
   echo "DEPOT_TOOLS_HOME : ${DEPOT_TOOLS_HOME}"
   echo "CUSTOM_CIPD_CLIENT : ${CUSTOM_CIPD_CLIENT}"
   echo "VPYTHON_BYPASS : ${VPYTHON_BYPASS}"
+  echo "env | grep -E '(DEPOT|CUSTOM)' : `env | grep -E '(DEPOT|CUSTOM)'`"
   echo "****************************************"
 
   # Install the necessary requirements
