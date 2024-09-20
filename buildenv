@@ -153,9 +153,9 @@ zopen_build() {
   # Igor found this url
   # https://issues.webrtc.org/issues/42228191
 
-  JFD EARLY EXIT
-  echo "JFD EARLY EXIT"
-  exit
+  #JFD EARLY EXIT
+  #echo "JFD EARLY EXIT"
+  #exit
 
   # change dirs to v8
   cd v8
@@ -171,6 +171,9 @@ zopen_build() {
   # Use depot tools gclient sync
   echo "gclient sync -D"
   echo "gclient is via: `type gclient`"
+  # If proceed manually, this fails
+  # cipd ensure depot_tools-main/.cipd_client is missing.
+  # depot_tools-main is an old path, it no longer has a -main suffix
   gclient sync -D -v
 
 
@@ -268,7 +271,7 @@ zopen_append_to_env()
 #
 # Build workflow
 #   cd ~/zopen/dev/v8port
-#   rm -rf ~/.local v8base install ${HOME}/zopen/usr/local/zopen/v8 venv logs; zopen build
+#   rm -rf ~/.local v8base install ${HOME}/zopen/usr/local/zopen/v8 venv logs; zopen build > out.log 2>&1
 #
 
 
