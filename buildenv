@@ -202,6 +202,8 @@ zopen_build() {
   pushd buildtools/zos
   echo "change dir to v8base/v8/buildtools/zos level..."
   echo "make link to gn in v8base/v8/buildtools/zos"
+  echo "using GN_HOME: ${GN_HOME}"
+  echo "cwd: `pwd`"
   ln -s "${GN_HOME}/gn" .
   popd
   export PATH="${ZOPEN_ROOT}/v8base/v8/buildtools/zos:$PATH" # for the 'ar' wrapper
