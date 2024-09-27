@@ -206,7 +206,12 @@ zopen_build() {
   echo "cwd: `pwd`"
   ln -s "${GN_HOME}/gn" .
   popd
-  export PATH="${ZOPEN_ROOT}/v8base/v8/buildtools/zos:$PATH" # for the 'ar' wrapper
+  export PATH="${PWD}:${ZOPEN_ROOT}/v8base/v8/buildtools/zos:$PATH" # for the 'ar' wrapper
+  echo "ZOPEN_ROOT : ${ZOPEN_ROOT}"
+  echo "PATH : ${PATH}"
+  #JFD EARLY EXIT
+  #echo "JFD EARLY EXIT"
+  #exit
 
   #
   # Do the v8 build
