@@ -14,7 +14,7 @@ export ZOPEN_DEPS="depot_tools zoslib cmake make python gn ninja git comp_clang"
 export ZOPEN_RUNTIME_DEPS="zoslib python"
 # Nothing to configure or build:?
 export ZOPEN_CONFIGURE="skip"
-#export ZOPEN_MAKE="skip"
+export ZOPEN_CHECK="skip"
 export ZOPEN_MAKE="zopen_build"
 
 export ZOPEN_INSTALL="zopen_install"
@@ -73,37 +73,20 @@ zopen_build() {
   # update the compiler settings
   unset CFLAGS CXXFLAGS LDFLAGS
 
+  #
+  # do the exports for depot_tools
+  #
+  # Disable updating depot_tools
   export DEPOT_TOOLS_UPDATE=0
-  # do the export and the set
-  CUSTOM_CIPD_CLIENT=${DEPOT_TOOLS_HOME}/.cipd_client
-  export CUSTOM_CIPD_CLIENT=${DEPOT_TOOLS_HOME}/.cipd_client
-  export DEPOT_TOOLS_BOOTSTRAP_PYTHON3=0
-  export VPYTHON_BYPASS='manually managed python not supported by chrome operations'
-  # RESULT
-  # DEPOT_TOOLS_HOME : /z/jd895801/zopen/usr/local/zopen/depot_tools/depot_tools-main.20240726_201652.zos
-  # CUSTOM_CIPD_CLIENT : /z/jd895801/zopen/usr/local/zopen/depot_tools/depot_tools-main.20240726_201652.zos/.cipd_client
-  # VPYTHON_BYPASS : manually managed python not supported by chrome operations
-
-
-
-
-  # Disable updating depot_tools
-
   # Point to custom CIPD_CLIENT
-
-  # Disable updating depot_tools
-
-  # Disable commands:
-  # * ensure_bootstrap
-  # * update_depot_tools
-
-  # Disable vpython3 (use python directly); see depot_tools/vpython3.
-
   # Run the CIPD client that was built on z/OS; see depot_tools/cipd.
+  export CUSTOM_CIPD_CLIENT=${DEPOT_TOOLS_HOME}/.cipd_client
+  # ?
+  export DEPOT_TOOLS_BOOTSTRAP_PYTHON3=0
+  # Disable vpython3 (use python directly); see depot_tools/vpython3.
+  export VPYTHON_BYPASS='manually managed python not supported by chrome operations'
 
-  # Disable commands:
-  # * ensure_bootstrap
-  # * update_depot_tools
+
 
   # Create the virtual env in the v8port install dir
   echo "    Creating a python venv..."
@@ -118,15 +101,17 @@ zopen_build() {
   echo "updating the virtual env pip"
   python -m pip install -U pip
 
-  # Update the PYTHON_EXECUTABLE to fix six.moves problem
   echo "****************************************"
-  echo "PYTHON : $(type python)"
+  echo "SETUP VERIFICATION"
+  echo "PYTHON (type) : $(type python)"
+  echo "PYTHON (which) : $(which python)"
   echo "fetch : $(type -p fetch)"
   echo "PATH : ${PATH}"
   echo "DEPOT_TOOLS_UPDATE: ${DEPOT_TOOLS_UPDATE}"
   echo "DEPOT_TOOLS_HOME : ${DEPOT_TOOLS_HOME}"
   echo "CUSTOM_CIPD_CLIENT : ${CUSTOM_CIPD_CLIENT}"
   echo "VPYTHON_BYPASS : ${VPYTHON_BYPASS}"
+  echo "AWS checks"
   echo "env | grep -E '(DEPOT|CUSTOM)' : `env | grep -E '(DEPOT|CUSTOM)'`"
   echo "env | grep -E '(AWS)' : `env | grep -E '(AWS)'`"
   echo "****************************************"
@@ -147,10 +132,6 @@ zopen_build() {
   # change into v8base
   cd v8base
   # fetch
-  echo "**************"
-  echo "env | grep -E '(AWS)' : `env | grep -E '(AWS)'`"
-  echo "fetch v8..."
-  echo "**************"
   fetch v8
 
   # At this point, fetch is using depot_tools from third party
@@ -161,9 +142,6 @@ zopen_build() {
   #JFD EARLY EXIT
   #echo "JFD EARLY EXIT"
   #exit
-  echo "JFD FETCH COMPLETE ***********" 
-  echo "JFD FETCH COMPLETE ***********" 
-  echo "JFD FETCH COMPLETE ***********" 
   echo "JFD FETCH COMPLETE ***********" 
   echo "JFD FETCH COMPLETE ***********" 
   echo "JFD FETCH COMPLETE ***********" 
@@ -195,9 +173,6 @@ zopen_build() {
   #
   # apply patches
   #
-  echo "JFD ABOUT TO APPLY PATCHES ***********" 
-  echo "JFD ABOUT TO APPLY PATCHES ***********" 
-  echo "JFD ABOUT TO APPLY PATCHES ***********" 
   echo "JFD ABOUT TO APPLY PATCHES ***********" 
   echo "JFD ABOUT TO APPLY PATCHES ***********" 
   echo "JFD ABOUT TO APPLY PATCHES ***********" 
@@ -276,9 +251,6 @@ zopen_build() {
   echo "JFD APPLY PATCHES COMPLETE ***********" 
   echo "JFD APPLY PATCHES COMPLETE ***********" 
   echo "JFD APPLY PATCHES COMPLETE ***********" 
-  echo "JFD APPLY PATCHES COMPLETE ***********" 
-  echo "JFD APPLY PATCHES COMPLETE ***********" 
-  echo "JFD APPLY PATCHES COMPLETE ***********" 
 
 
   #
@@ -294,9 +266,6 @@ zopen_build() {
   export PATH="${PWD}:${ZOPEN_ROOT}/v8base/v8/buildtools/zos:$PATH" # for the 'ar' wrapper
   echo "ZOPEN_ROOT : ${ZOPEN_ROOT}"
   echo "PATH : ${PATH}"
-  #JFD EARLY EXIT
-  #echo "JFD EARLY EXIT"
-  #exit
 
 
 
@@ -384,5 +353,6 @@ zopen_append_to_setup()
   # At this time, ZOPEN_INSTAL_DIR is:
   # ${HOME}/zopen/usr/local/zopen/v8/v8-DEV
 
-  echo "echo \"append_to_setup()\""
+  # Do we want comments in the log?  Is this what this does?
+  echo "echo \"### append_to_setup() ### \""
 }
