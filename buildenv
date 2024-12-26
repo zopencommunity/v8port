@@ -262,9 +262,9 @@ zopen_build() {
   echo "Apply pax files to buildtools complete"
   echo "Apply pax files to buildtools complete"
 
-  echo "** APPLY PATCHES, PAX and OVERLAYS COMPLETE ***********" 
-  echo "** APPLY PATCHES, PAX and OVERLAYS COMPLETE ***********" 
-  echo "** APPLY PATCHES, PAX and OVERLAYS COMPLETE ***********" 
+  echo "JFD APPLY PATCHES COMPLETE ***********" 
+  echo "JFD APPLY PATCHES COMPLETE ***********" 
+  echo "JFD APPLY PATCHES COMPLETE ***********" 
 
 
   #
