@@ -68,7 +68,7 @@ zopen_build() {
   # enable tracing.
   #set -x
 
-  export PATH="${DEPOT_TOOLS_HOME}:${GN_HOME}:$PATH"
+  export PATH="${HOME}/zopen/usr/local/bin:${DEPOT_TOOLS_HOME}:${GN_HOME}:$PATH"
 
   # update the compiler settings
   unset CFLAGS CXXFLAGS LDFLAGS
@@ -128,6 +128,7 @@ zopen_build() {
   echo "CUSTOM_CIPD_CLIENT : ${CUSTOM_CIPD_CLIENT}"
   echo "VPYTHON_BYPASS : ${VPYTHON_BYPASS}"
   echo "env | grep -E '(DEPOT|CUSTOM)' : `env | grep -E '(DEPOT|CUSTOM)'`"
+  echo "env | grep -E '(AWS)' : `env | grep -E '(AWS)'`"
   echo "****************************************"
 
   # Install the necessary requirements
@@ -146,7 +147,10 @@ zopen_build() {
   # change into v8base
   cd v8base
   # fetch
+  echo "**************"
+  echo "env | grep -E '(AWS)' : `env | grep -E '(AWS)'`"
   echo "fetch v8..."
+  echo "**************"
   fetch v8
 
   # At this point, fetch is using depot_tools from third party
@@ -157,6 +161,12 @@ zopen_build() {
   #JFD EARLY EXIT
   #echo "JFD EARLY EXIT"
   #exit
+  echo "JFD FETCH COMPLETE ***********" 
+  echo "JFD FETCH COMPLETE ***********" 
+  echo "JFD FETCH COMPLETE ***********" 
+  echo "JFD FETCH COMPLETE ***********" 
+  echo "JFD FETCH COMPLETE ***********" 
+  echo "JFD FETCH COMPLETE ***********" 
 
   # change dirs to v8
   cd v8
@@ -175,37 +185,112 @@ zopen_build() {
   # If proceed manually, this fails
   # cipd ensure depot_tools-main/.cipd_client is missing.
   # depot_tools-main is an old path, it no longer has a -main suffix
+  #
+  echo "JFD TODO: Do we do the DEPS.sed script here in patches?"
+  echo "JFD TODO: Do we do the DEPS.sed script here in patches?"
+  echo "JFD TODO: Do we do the DEPS.sed script here in patches?"
   gclient sync -D -v
 
 
   #
   # apply patches
   #
+  echo "JFD ABOUT TO APPLY PATCHES ***********" 
+  echo "JFD ABOUT TO APPLY PATCHES ***********" 
+  echo "JFD ABOUT TO APPLY PATCHES ***********" 
+  echo "JFD ABOUT TO APPLY PATCHES ***********" 
+  echo "JFD ABOUT TO APPLY PATCHES ***********" 
+  echo "JFD ABOUT TO APPLY PATCHES ***********" 
   git stash
-  for df in `find ${ZOPEN_ROOT}/patches/ -type f -name "git.*diff" | sort`; do
-    dirfile=`echo $df | sed "s:^${ZOPEN_ROOT}/patches/::"`
-    srcdir=`dirname $dirfile` 
-    echo "under $(pwd): srcdir=${srcdir}"
-    [[ "$srcdir" != "." ]] && pushd $srcdir && git stash
-    echo "git apply $MAINDIR/$df from `pwd`"
-    git apply $MAINDIR/$df
-    [[ "$srcdir" != "." ]] && popd
-  done
+
+  echo "Apply patches for overall repo"
+  echo "Apply patches for overall repo"
+  echo "Apply patches for overall repo"
+  cd ${ZOPEN_ROOT}/v8base/v8
+  echo "  -- compbuild"
+  git apply ${ZOPEN_ROOT}/patches/git.v8.compbuild.diff
+  echo "  -- cpp"
+  git apply ${ZOPEN_ROOT}/patches/git.v8.cpp.diff
+  echo "  -- debug"
+  git apply ${ZOPEN_ROOT}/patches/git.v8.debug.diff
+  echo "  -- v8"
+  git apply ${ZOPEN_ROOT}/patches/git.v8.diff
+  echo "  -- flags"
+  git apply ${ZOPEN_ROOT}/patches/git.v8.flags.diff
+  echo "  -- killharder"
+  git apply ${ZOPEN_ROOT}/patches/git.v8.killharder.diff
+  echo "  -- memset0"
+  git apply ${ZOPEN_ROOT}/patches/git.v8.memset0.diff
+  echo "  -- teststatus"
+  git apply ${ZOPEN_ROOT}/patches/git.v8.teststatus.diff
+  echo "  -- tls"
+  git apply ${ZOPEN_ROOT}/patches/git.v8.tls.diff
+  echo "Apply patch for third_party repos"
+  cd ${ZOPEN_ROOT}/v8base/v8/third_party
+  echo "  -- abseill-cpp"
+  cd ${ZOPEN_ROOT}/v8base/v8/third_party/abseil-cpp
+  git apply ${ZOPEN_ROOT}/patches/third_party/abseil-cpp/git.diff
+  echo "  -- fuzztest"
+  cd ${ZOPEN_ROOT}/v8base/v8/third_party/fuzztest/src
+  git apply ${ZOPEN_ROOT}/patches/third_party/fuzztest/src/git.diff
+  echo "  -- googletest"
+  cd ${ZOPEN_ROOT}/v8base/v8/third_party/googletest/src
+  git apply ${ZOPEN_ROOT}/patches/third_party/googletest/src/git.diff
+  echo "  -- protobuf_chrome"
+  cd ${ZOPEN_ROOT}/v8base/v8/third_party/protobuf_chrome
+  git apply ${ZOPEN_ROOT}/patches/third_party/protobuf_chrome/git.diff
+  echo "  -- re2"
+  cd ${ZOPEN_ROOT}/v8base/v8/third_party/re2/src
+  git apply ${ZOPEN_ROOT}/patches/third_party/re2/src/git.diff
+  echo "  -- zlib"
+  cd ${ZOPEN_ROOT}/v8base/v8/third_party/zlib
+  git apply ${ZOPEN_ROOT}/patches/third_party/zlib/git.diff
+  echo "Apply patches for overall repo complete"
+  echo "Apply patches for overall repo complete"
+  echo "Apply patches for overall repo complete"
+
+  echo "Perform file overlays"
+  echo "Perform file overlays"
+  echo "Perform file overlays"
+  cd ${ZOPEN_ROOT}/v8base/v8/
+  echo "nothing done. clarify.  TODO"
+  echo "  -- patches/buildtools/zos/ar"
+  echo "  -- patches/src/base/debug/stack_trace_zos.cc"
+  echo "  -- patches/src/base/platform/platform-zos.cc"
+  echo "  -- patches/src/heap/src/asm/zos/push_registers_asm.cc"
+  echo "  -- patches/src/snapshot/embedded/platform-embedded-file-writer-zos.cc"
+  echo "  -- patches/src/snapshot/embedded/platform-embedded-file-writer-zos.h"
+  echo "Perform file overlays complete"
+  echo "Perform file overlays complete"
+  echo "Perform file overlays complete"
 
   echo "Apply pax files to buildtools"
-  pushd buildtools
+  echo "Apply pax files to buildtools"
+  echo "Apply pax files to buildtools"
+  cd ${ZOPEN_ROOT}/v8base/v8/buildtools
   pax -p p -rzf ${ZOPEN_ROOT}/patches/buildtools/buildtools.zos.20231122.92b79f4d75.pax
-  popd
+  echo "Apply pax files to buildtools complete"
+  echo "Apply pax files to buildtools complete"
+  echo "Apply pax files to buildtools complete"
+
+  echo "JFD APPLY PATCHES COMPLETE ***********" 
+  echo "JFD APPLY PATCHES COMPLETE ***********" 
+  echo "JFD APPLY PATCHES COMPLETE ***********" 
+  echo "JFD APPLY PATCHES COMPLETE ***********" 
+  echo "JFD APPLY PATCHES COMPLETE ***********" 
+  echo "JFD APPLY PATCHES COMPLETE ***********" 
+
+
   #
   # Prepare v8 for building
   #
-  pushd buildtools/zos
+  cd ${ZOPEN_ROOT}/v8base/v8/buildtools/zos
   echo "change dir to v8base/v8/buildtools/zos level..."
   echo "make link to gn in v8base/v8/buildtools/zos"
   echo "using GN_HOME: ${GN_HOME}"
   echo "cwd: `pwd`"
   ln -s "${GN_HOME}/gn" .
-  popd
+  cd ../..
   export PATH="${PWD}:${ZOPEN_ROOT}/v8base/v8/buildtools/zos:$PATH" # for the 'ar' wrapper
   echo "ZOPEN_ROOT : ${ZOPEN_ROOT}"
   echo "PATH : ${PATH}"
@@ -213,11 +298,17 @@ zopen_build() {
   #echo "JFD EARLY EXIT"
   #exit
 
+
+
   #
   # Do the v8 build
   #
   echo "Generate ninja files using gn..."
   gn -v gen out/zos_s390x.release --args="is_debug=false treat_warnings_as_errors=false ${COMPONENT_BUILD}"
+  # Why was this done later?  Should we not do it now once the build output dir is there 
+  # and when the build happens?
+  # This is required when the built binaries (e.g. mksnapshot) and tests are run
+  export LIBPATH=${ZOPEN_ROOT}/out/zos_s390x.release:$LIBPATH
   echo "Perform build using ninja..."
   V=1 ninja -v -j ${ZOPEN_NUM_JOBS} -C out/zos_s390x.release/
 
