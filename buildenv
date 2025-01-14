@@ -24,7 +24,7 @@ export ZOPEN_CATEGORIES="development language core"
 # User Tunable Paramters
 # Uncomment the following line to build d8 so that it uses a dynamic 
 # library rather than a static build:
-#COMPONENT_BUILD="is_component_build=true"
+COMPONENT_BUILD="is_component_build=true"
 [ -z "${COMPONENT_BUILD}" ] && COMPONENT_BUILD=""
 
 zopen_check_results()
@@ -120,9 +120,6 @@ zopen_build() {
   echo "Installing reqired package in venv"  
   pip install -r requirements.txt
 
-  # Try this to fix six.moves
-  pip install --upgrade six
-
   echo "Invoking gclient metrics --opt-out"
   # Comment out this line if you wish to participate.
   gclient metrics --opt-out
@@ -173,14 +170,15 @@ zopen_build() {
   #
   # apply patches
   #
-  echo "JFD ABOUT TO APPLY PATCHES ***********" 
-  echo "JFD ABOUT TO APPLY PATCHES ***********" 
-  echo "JFD ABOUT TO APPLY PATCHES ***********" 
+  echo "** gclient sync complete.  About to git stash. ***" 
   git stash
 
-  echo "Apply patches for overall repo"
-  echo "Apply patches for overall repo"
-  echo "Apply patches for overall repo"
+  echo "** APPLY PATCHES, PAX and OVERLAYS BEGIN ***********" 
+  echo "** APPLY PATCHES, PAX and OVERLAYS BEGIN ***********" 
+  echo "** APPLY PATCHES, PAX and OVERLAYS BEGIN ***********" 
+  echo "** APPLY PATCHES BEGIN ***********" 
+  echo "** APPLY PATCHES BEGIN ***********" 
+  echo "** APPLY PATCHES BEGIN ***********" 
   cd ${ZOPEN_ROOT}/v8base/v8
   echo "  -- compbuild"
   git apply ${ZOPEN_ROOT}/patches/git.v8.compbuild.diff
@@ -248,9 +246,9 @@ zopen_build() {
   echo "Apply pax files to buildtools complete"
   echo "Apply pax files to buildtools complete"
 
-  echo "JFD APPLY PATCHES COMPLETE ***********" 
-  echo "JFD APPLY PATCHES COMPLETE ***********" 
-  echo "JFD APPLY PATCHES COMPLETE ***********" 
+  echo "** APPLY PATCHES, PAX and OVERLAYS COMPLETE ***********" 
+  echo "** APPLY PATCHES, PAX and OVERLAYS COMPLETE ***********" 
+  echo "** APPLY PATCHES, PAX and OVERLAYS COMPLETE ***********" 
 
 
   #
