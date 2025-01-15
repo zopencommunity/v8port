@@ -24,7 +24,7 @@ export ZOPEN_CATEGORIES="development language core"
 # User Tunable Paramters
 # Uncomment the following line to build d8 so that it uses a dynamic 
 # library rather than a static build:
-COMPONENT_BUILD="is_component_build=true"
+#COMPONENT_BUILD="is_component_build=true"
 [ -z "${COMPONENT_BUILD}" ] && COMPONENT_BUILD=""
 
 zopen_check_results()
@@ -68,7 +68,23 @@ zopen_build() {
   # enable tracing.
   #set -x
 
+  # works
   export PATH="${HOME}/zopen/usr/local/bin:${DEPOT_TOOLS_HOME}:${GN_HOME}:$PATH"
+  # will this work?
+  # export PATH="${DEPOT_TOOLS_HOME}:${GN_HOME}:$PATH"
+  # No.  It fails with:
+  # Generate ninja files using gn...
+  # Traceback (most recent call last):
+  #   File "/z/jd895801/zopen/usr/local/zopen/depot_tools/depot_tools-main/gn.py", line 99, in <module>
+  #     sys.exit(main(sys.argv))
+  #              ^^^^^^^^^^^^^^
+  #   File "/z/jd895801/zopen/usr/local/zopen/depot_tools/depot_tools-main/gn.py", line 73, in main
+  #     bin_path = gclient_paths.GetBuildtoolsPlatformBinaryPath()
+  #                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  #   File "/z/jd895801/zopen/usr/local/zopen/depot_tools/depot_tools-main/gclient_paths.py", line 147, in GetBuildtoolsPlatformBinaryPath
+  #     raise gclient_utils.Error('Unknown platform: ' + sys.platform)
+  # gclient_utils.Error: Unknown platform: zos
+
 
   # update the compiler settings
   unset CFLAGS CXXFLAGS LDFLAGS
@@ -272,18 +288,17 @@ zopen_build() {
   #
   echo "Generate ninja files using gn..."
   gn -v gen out/zos_s390x.release --args="is_debug=false treat_warnings_as_errors=false ${COMPONENT_BUILD}"
-  # Why was this done later?  Should we not do it now once the build output dir is there 
-  # and when the build happens?
-  # This is required when the built binaries (e.g. mksnapshot) and tests are run
+
+  # This is required when the built binaries (e.g. mksnapshot) and tests are run.
+  # Do this now, before tests are started so that when doing a component build
+  # it can find the .so's during testing.
   export LIBPATH=${ZOPEN_ROOT}/out/zos_s390x.release:$LIBPATH
+
   echo "Perform build using ninja..."
   V=1 ninja -v -j ${ZOPEN_NUM_JOBS} -C out/zos_s390x.release/
 
   # on exit return to the top level of the git repo
   cd ${ZOPEN_ROOT}
-
-  # This is required when the built binaries (e.g. mksnapshot) and tests are run
-  export LIBPATH=${ZOPEN_ROOT}/out/zos_s390x.release:$LIBPATH
 
   # disable tracing
   #set +x
