@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
 
-export DEPOT_TOOLS_HOME=${HOME}/zopen/usr/local/zopen/depot_tools/depot_tools/
-
 export PATH="${HOME}/zopen/usr/local/bin:${DEPOT_TOOLS_HOME}:${GN_HOME}:$PATH"
 
 # update the compiler settings
@@ -50,5 +48,6 @@ gclient metrics --opt-out
 
 echo "Change to v8base/v8 and run ninja"
 echo "  eg: v8base/v8"
+echo "      gn gen -v -c out/zos_s390x.release"
 echo "      ninja -v -C out/zos_s390x.release"
 
