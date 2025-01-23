@@ -4,3 +4,5 @@ log.STABLE/
 install/
 v8base/
 venv/
+.zoslib_hooks/
+out.log

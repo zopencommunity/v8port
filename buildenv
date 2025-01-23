@@ -24,7 +24,7 @@ export ZOPEN_CATEGORIES="development language core"
 # User Tunable Paramters
 # Uncomment the following line to build d8 so that it uses a dynamic 
 # library rather than a static build:
-#COMPONENT_BUILD="is_component_build=true"
+COMPONENT_BUILD="is_component_build=true"
 [ -z "${COMPONENT_BUILD}" ] && COMPONENT_BUILD=""
 
 zopen_check_results()
@@ -292,7 +292,8 @@ zopen_build() {
   # This is required when the built binaries (e.g. mksnapshot) and tests are run.
   # Do this now, before tests are started so that when doing a component build
   # it can find the .so's during testing.
-  export LIBPATH=${ZOPEN_ROOT}/out/zos_s390x.release:$LIBPATH
+  export LIBPATH=`pwd`/out/zos_s390x.release:$LIBPATH
+  echo "LIBPATH : ${LIBPATH}"
 
   echo "Perform build using ninja..."
   V=1 ninja -v -j ${ZOPEN_NUM_JOBS} -C out/zos_s390x.release/
@@ -313,6 +314,15 @@ zopen_install() {
 
   mkdir -p ${ZOPEN_INSTALL_DIR}
   cp -r * ${ZOPEN_INSTALL_DIR} # modify to copy the relevant scripts
+  # This is required for using the post install executables and libs
+  # when doing a component build.  If its not done here it should be
+  # specified as part of the env setup.
+  # TODO: JFD
+  # 1. Make mod to a check to see if build completed befor installing
+  # 2. Add this export to LIBPATH as part of install.
+  # 3. Only modify the LIBPATH if its a component build.
+  echo "Modify ENV as part of the post install setup for component build"
+  echo "export LIBPATH=${ZOPEN_ROOT}/out/zos_s390x.release:$LIBPATH"
 }
 
 #
