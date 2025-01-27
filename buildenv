@@ -9,9 +9,9 @@
 # Use zopen build -vv to see if the dependencies are being processed
 export ZOPEN_TYPE="BARE"
 export ZOPEN_NAME="v8"
-export ZOPEN_DEPS="depot_tools zoslib cmake make python gn ninja git comp_clang bash"
+export ZOPEN_DEPS="depot_tools zoslib cmake make check_python gn ninja git check_clang"
 
-export ZOPEN_RUNTIME_DEPS="zoslib python"
+export ZOPEN_RUNTIME_DEPS="zoslib check_python"
 # Nothing to configure or build:?
 export ZOPEN_CONFIGURE="skip"
 export ZOPEN_CHECK="skip"
